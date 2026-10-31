@@ -14,15 +14,16 @@
 #include <vector>
 
 #include <triton/archEnums.hpp>
+#include <triton/arm32Specifications.hpp>
 #include <triton/callbacks.hpp>
 #include <triton/cpuInterface.hpp>
 #include <triton/dllexport.hpp>
-#include <triton/externalLibs.hpp>
 #include <triton/instruction.hpp>
 #include <triton/memoryAccess.hpp>
 #include <triton/register.hpp>
 #include <triton/tritonTypes.hpp>
-#include <triton/arm32Specifications.hpp>
+
+
 
 //! The Triton namespace
 namespace triton {
@@ -67,10 +68,28 @@ namespace triton {
             triton::callbacks::Callbacks* callbacks;
 
             //! Capstone context for ARM mode.
-            triton::extlibs::capstone::csh handle_arm;
+            std::size_t handleArm;
 
             //! Capstone context for Thumb mode.
-            triton::extlibs::capstone::csh handle_thumb;
+            std::size_t handleThumb;
+
+            //! State of the currently processed IT block.
+            char itStateArray[5];
+
+            //! Number of instructions not yet processed in the IT block.
+            triton::uint32 itInstrsCount;
+
+            //! Index of the instruction currently processed in the IT block.
+            triton::uint32 itInstrIndex;
+
+            //! Condition code of the currently processed IT block.
+            triton::arch::arm::condition_e itCC;
+
+            //! Inverted condition code of the currently processed IT block.
+            triton::arch::arm::condition_e itCCInv;
+
+            //! Exclusive memory tags. Each address in this std::set is tagged as exclusive.
+            std::set<triton::uint64> exclusiveMemoryTags;
 
             //! Copies a Arm32Cpu class.
             void copy(const Arm32Cpu& other);
@@ -80,6 +99,9 @@ namespace triton {
 
             //! Post process instructions to provide a uniformity among ARM and Thumb modes.
             void postDisassembly(triton::arch::Instruction& inst) const;
+
+            //! Given a condition code it returns its opposite code (mainly used when processing IT instructions).
+            triton::arch::arm::condition_e invertCodeCondition(triton::arch::arm::condition_e cc) const;
 
           protected:
             /*! \brief map of address -> concrete value
@@ -150,7 +172,9 @@ namespace triton {
             TRITON_EXPORT bool isRegister(triton::arch::register_e regId) const;
             TRITON_EXPORT bool isRegisterValid(triton::arch::register_e regId) const;
             TRITON_EXPORT bool isThumb(void) const;
+            TRITON_EXPORT bool isMemoryExclusive(const triton::arch::MemoryAccess& mem) const;
             TRITON_EXPORT const std::unordered_map<triton::arch::register_e, const triton::arch::Register>& getAllRegisters(void) const;
+            TRITON_EXPORT const std::unordered_map<triton::uint64, triton::uint8, IdentityHash<triton::uint64>>& getConcreteMemory(void) const;
             TRITON_EXPORT const triton::arch::Register& getParentRegister(const triton::arch::Register& reg) const;
             TRITON_EXPORT const triton::arch::Register& getParentRegister(triton::arch::register_e id) const;
             TRITON_EXPORT const triton::arch::Register& getProgramCounter(void) const;
@@ -167,13 +191,14 @@ namespace triton {
             TRITON_EXPORT triton::uint512 getConcreteRegisterValue(const triton::arch::Register& reg, bool execCallbacks=true) const;
             TRITON_EXPORT triton::uint8 getConcreteMemoryValue(triton::uint64 addr, bool execCallbacks=true) const;
             TRITON_EXPORT void clear(void);
-            TRITON_EXPORT void disassembly(triton::arch::Instruction& inst) const;
-            TRITON_EXPORT void setConcreteMemoryAreaValue(triton::uint64 baseAddr, const std::vector<triton::uint8>& values);
-            TRITON_EXPORT void setConcreteMemoryAreaValue(triton::uint64 baseAddr, const triton::uint8* area, triton::usize size);
-            TRITON_EXPORT void setConcreteMemoryValue(const triton::arch::MemoryAccess& mem, const triton::uint512& value);
-            TRITON_EXPORT void setConcreteMemoryValue(triton::uint64 addr, triton::uint8 value);
-            TRITON_EXPORT void setConcreteRegisterValue(const triton::arch::Register& reg, const triton::uint512& value);
+            TRITON_EXPORT void disassembly(triton::arch::Instruction& inst);
+            TRITON_EXPORT void setConcreteMemoryAreaValue(triton::uint64 baseAddr, const std::vector<triton::uint8>& values, bool execCallbacks=true);
+            TRITON_EXPORT void setConcreteMemoryAreaValue(triton::uint64 baseAddr, const void* area, triton::usize size, bool execCallbacks=true);
+            TRITON_EXPORT void setConcreteMemoryValue(const triton::arch::MemoryAccess& mem, const triton::uint512& value, bool execCallbacks=true);
+            TRITON_EXPORT void setConcreteMemoryValue(triton::uint64 addr, triton::uint8 value, bool execCallbacks=true);
+            TRITON_EXPORT void setConcreteRegisterValue(const triton::arch::Register& reg, const triton::uint512& value, bool execCallbacks=true);
             TRITON_EXPORT void setThumb(bool state);
+            TRITON_EXPORT void setMemoryExclusiveTag(const triton::arch::MemoryAccess& mem, bool tag);
             TRITON_EXPORT bool isConcreteMemoryValueDefined(const triton::arch::MemoryAccess& mem) const;
             TRITON_EXPORT bool isConcreteMemoryValueDefined(triton::uint64 baseAddr, triton::usize size=1) const;
             TRITON_EXPORT void clearConcreteMemoryValue(const triton::arch::MemoryAccess& mem);

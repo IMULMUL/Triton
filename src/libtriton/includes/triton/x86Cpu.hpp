@@ -17,12 +17,13 @@
 #include <triton/callbacks.hpp>
 #include <triton/cpuInterface.hpp>
 #include <triton/dllexport.hpp>
-#include <triton/externalLibs.hpp>
 #include <triton/instruction.hpp>
 #include <triton/memoryAccess.hpp>
 #include <triton/register.hpp>
 #include <triton/tritonTypes.hpp>
 #include <triton/x86Specifications.hpp>
+
+
 
 //! The Triton namespace
 namespace triton {
@@ -59,7 +60,7 @@ namespace triton {
           triton::callbacks::Callbacks* callbacks;
 
           //! Capstone context
-          triton::extlibs::capstone::csh handle;
+          std::size_t handle;
 
           //! Copies a x86Cpu class.
           void copy(const x86Cpu& other);
@@ -97,22 +98,22 @@ namespace triton {
           triton::uint8 eip[triton::size::dword];
           //! Concrete value of eflags
           triton::uint8 eflags[triton::size::dword];
-          //! Concrete value of mm0
-          triton::uint8 mm0[triton::size::qword];
-          //! Concrete value of mm1
-          triton::uint8 mm1[triton::size::qword];
-          //! Concrete value of mm2
-          triton::uint8 mm2[triton::size::qword];
-          //! Concrete value of mm3
-          triton::uint8 mm3[triton::size::qword];
-          //! Concrete value of mm4
-          triton::uint8 mm4[triton::size::qword];
-          //! Concrete value of mm5
-          triton::uint8 mm5[triton::size::qword];
-          //! Concrete value of mm6
-          triton::uint8 mm6[triton::size::qword];
-          //! Concrete value of mm7
-          triton::uint8 mm7[triton::size::qword];
+          //! Concrete value of st0
+          triton::uint8 st0[triton::size::fword];
+          //! Concrete value of st1
+          triton::uint8 st1[triton::size::fword];
+          //! Concrete value of st2
+          triton::uint8 st2[triton::size::fword];
+          //! Concrete value of st3
+          triton::uint8 st3[triton::size::fword];
+          //! Concrete value of st4
+          triton::uint8 st4[triton::size::fword];
+          //! Concrete value of st5
+          triton::uint8 st5[triton::size::fword];
+          //! Concrete value of st6
+          triton::uint8 st6[triton::size::fword];
+          //! Concrete value of st7
+          triton::uint8 st7[triton::size::fword];
           //! Concrete value of ymm0
           triton::uint8 ymm0[triton::size::qqword];
           //! Concrete value of ymm1
@@ -129,8 +130,6 @@ namespace triton {
           triton::uint8 ymm6[triton::size::qqword];
           //! Concrete value of ymm7
           triton::uint8 ymm7[triton::size::qqword];
-          //! Concrete value of mxcsr
-          triton::uint8 mxcsr[triton::size::dword];
           //! Concrete value of cr0
           triton::uint8 cr0[triton::size::dword];
           //! Concrete value of cr1
@@ -187,6 +186,30 @@ namespace triton {
           triton::uint8 dr6[triton::size::dword];
           //! Condete value of dr7
           triton::uint8 dr7[triton::size::dword];
+          //! Concrete value of the x87 FPU Control Word
+          triton::uint8 fcw[triton::size::word];
+          //! Concrete value of the x87 FPU Status Word
+          triton::uint8 fsw[triton::size::word];
+          //! Concrete value of the x87 FPU Tag Word
+          triton::uint8 ftw[triton::size::word];
+          //! Concrete value of the x87 FPU Opcode
+          triton::uint8 fop[triton::size::word];
+          //! Concrete value of the x87 FPU Instruction Pointer Offset
+          triton::uint8 fip[triton::size::qword];
+          //! Concrete value of the x87 FPU Instruction Pointer Selector
+          triton::uint8 fcs[triton::size::word];
+          //! Concrete value of the x87 FPU Instruction Operand Pointer Offset
+          triton::uint8 fdp[triton::size::qword];
+          //! Concrete value of the x87 FPU Instruction Operand Pointer Selector
+          triton::uint8 fds[triton::size::word];
+          //! Concrete value of the EFER MSR Register
+          triton::uint8 efer[triton::size::qword];
+          //! Concrete value of the SSE Register State
+          triton::uint8 mxcsr[triton::size::dword];
+          //! Concrete value of the SSE Register State Mask
+          triton::uint8 mxcsr_mask[triton::size::dword];
+          //! Concrete value of the TSC Register
+          triton::uint8 tsc[triton::size::qword];
 
         public:
           //! Constructor.
@@ -207,8 +230,23 @@ namespace triton {
           //! Returns true if regId is a MMX register.
           TRITON_EXPORT bool isMMX(triton::arch::register_e regId) const;
 
+          //! Returns true if regId is a STX register.
+          TRITON_EXPORT bool isSTX(triton::arch::register_e regId) const;
+
+          //! Returns true if regId is a SSE Contol register.
+          TRITON_EXPORT bool isSSECTL(triton::arch::register_e regId) const;
+
           //! Returns true if regId is a SSE register.
           TRITON_EXPORT bool isSSE(triton::arch::register_e regId) const;
+
+          //! Returns true if regId is a FPU register.
+          TRITON_EXPORT bool isFPU(triton::arch::register_e regId) const;
+
+          //! Returns true if regId is an EFER register
+          TRITON_EXPORT bool isEFER(triton::arch::register_e regId) const;
+
+          //! Returns true if regId is an TSC register
+          TRITON_EXPORT bool isTSC(triton::arch::register_e regId) const;
 
           //! Returns true if regId is a AVX-256 (YMM) register.
           TRITON_EXPORT bool isAVX256(triton::arch::register_e regId) const;
@@ -227,7 +265,9 @@ namespace triton {
           TRITON_EXPORT bool isRegister(triton::arch::register_e regId) const;
           TRITON_EXPORT bool isRegisterValid(triton::arch::register_e regId) const;
           TRITON_EXPORT bool isThumb(void) const;
+          TRITON_EXPORT bool isMemoryExclusive(const triton::arch::MemoryAccess& mem) const;
           TRITON_EXPORT const std::unordered_map<triton::arch::register_e, const triton::arch::Register>& getAllRegisters(void) const;
+          TRITON_EXPORT const std::unordered_map<triton::uint64, triton::uint8, IdentityHash<triton::uint64>>& getConcreteMemory(void) const;
           TRITON_EXPORT const triton::arch::Register& getParentRegister(const triton::arch::Register& reg) const;
           TRITON_EXPORT const triton::arch::Register& getParentRegister(triton::arch::register_e id) const;
           TRITON_EXPORT const triton::arch::Register& getProgramCounter(void) const;
@@ -244,13 +284,14 @@ namespace triton {
           TRITON_EXPORT triton::uint512 getConcreteRegisterValue(const triton::arch::Register& reg, bool execCallbacks=true) const;
           TRITON_EXPORT triton::uint8 getConcreteMemoryValue(triton::uint64 addr, bool execCallbacks=true) const;
           TRITON_EXPORT void clear(void);
-          TRITON_EXPORT void disassembly(triton::arch::Instruction& inst) const;
-          TRITON_EXPORT void setConcreteMemoryAreaValue(triton::uint64 baseAddr, const std::vector<triton::uint8>& values);
-          TRITON_EXPORT void setConcreteMemoryAreaValue(triton::uint64 baseAddr, const triton::uint8* area, triton::usize size);
-          TRITON_EXPORT void setConcreteMemoryValue(const triton::arch::MemoryAccess& mem, const triton::uint512& value);
-          TRITON_EXPORT void setConcreteMemoryValue(triton::uint64 addr, triton::uint8 value);
-          TRITON_EXPORT void setConcreteRegisterValue(const triton::arch::Register& reg, const triton::uint512& value);
+          TRITON_EXPORT void disassembly(triton::arch::Instruction& inst);
+          TRITON_EXPORT void setConcreteMemoryAreaValue(triton::uint64 baseAddr, const std::vector<triton::uint8>& values, bool execCallbacks=true);
+          TRITON_EXPORT void setConcreteMemoryAreaValue(triton::uint64 baseAddr, const void* area, triton::usize size, bool execCallbacks=true);
+          TRITON_EXPORT void setConcreteMemoryValue(const triton::arch::MemoryAccess& mem, const triton::uint512& value, bool execCallbacks=true);
+          TRITON_EXPORT void setConcreteMemoryValue(triton::uint64 addr, triton::uint8 value, bool execCallbacks=true);
+          TRITON_EXPORT void setConcreteRegisterValue(const triton::arch::Register& reg, const triton::uint512& value, bool execCallbacks=true);
           TRITON_EXPORT void setThumb(bool state);
+          TRITON_EXPORT void setMemoryExclusiveTag(const triton::arch::MemoryAccess& mem, bool tag);
           TRITON_EXPORT bool isConcreteMemoryValueDefined(const triton::arch::MemoryAccess& mem) const;
           TRITON_EXPORT bool isConcreteMemoryValueDefined(triton::uint64 baseAddr, triton::usize size=1) const;
           TRITON_EXPORT void clearConcreteMemoryValue(const triton::arch::MemoryAccess& mem);

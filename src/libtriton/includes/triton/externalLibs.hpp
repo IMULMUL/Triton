@@ -29,13 +29,14 @@ namespace triton {
      *  \addtogroup extlibs
      *  @{
      */
-      #if defined(__unix__) || defined(__APPLE__)
-        #include <capstone/arm64.h>
-        #include <capstone/arm.h>
-        #include <capstone/capstone.h>
-        #include <capstone/x86.h>
-      #elif _WIN32
-        #include <capstone.h>
+      #include <capstone/arm.h>
+      #include <capstone/arm64.h>
+      #include <capstone/capstone.h>
+      #include <capstone/riscv.h>
+      #include <capstone/x86.h>
+
+      #if CS_API_MAJOR >= 6
+      constexpr auto CS_ARCH_ARM64 = CS_ARCH_AARCH64;
       #endif
     /*! @} End of capstone namespace */
     };

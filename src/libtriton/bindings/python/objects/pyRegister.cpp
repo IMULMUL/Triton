@@ -8,8 +8,11 @@
 #include <triton/pythonObjects.hpp>
 #include <triton/pythonUtils.hpp>
 #include <triton/pythonXFunctions.hpp>
+#include <triton/coreUtils.hpp>
 #include <triton/exceptions.hpp>
 #include <triton/register.hpp>
+
+#include <iostream>
 
 
 
@@ -40,7 +43,7 @@ This object is used to represent a register operand according to the CPU archite
 
 ~~~~~~~~~~~~~{.py}
 >>> ctxt.processing(inst)
-True
+0
 >>> print(inst)
 0x40000: mov ah, byte ptr [rdx + rcx*2 + 0x100]
 
@@ -121,6 +124,10 @@ e.g: `8`
 
 - <b>\ref py_OPERAND_page getType(void)</b><br>
 Returns the type of the register. In this case this function returns `OPERAND.REG`.
+
+- <b>\ref py_VAS_page getVASType(void)</b><br>
+Returns the vector arrangement specifier. Mainly used for AArch64.<br>
+e.g: `VAS.ARM.v8B`
 
 - <b>bool isMutable(void)</b><br>
 Returns true if this register is mutable. Mainly used in AArch64 to define that some registers like XZR are immutable.
@@ -254,6 +261,16 @@ namespace triton {
       }
 
 
+      static PyObject* Register_getVASType(PyObject* self, PyObject* noarg) {
+        try {
+          return PyLong_FromUint32(PyRegister_AsRegister(self)->getVASType());
+        }
+        catch (const triton::exceptions::Exception& e) {
+          return PyErr_Format(PyExc_TypeError, "%s", e.what());
+        }
+      }
+
+
       static PyObject* Register_isMutable(PyObject* self, PyObject* noarg) {
         try {
           if (PyRegister_AsRegister(self)->isMutable())
@@ -299,9 +316,7 @@ namespace triton {
 
       static PyObject* Register_str(PyObject* self) {
         try {
-          std::stringstream str;
-          str << PyRegister_AsRegister(self);
-          return PyStr_FromFormat("%s", str.str().c_str());
+          return PyStr_FromFormat("%s", triton::utils::toString(PyRegister_AsRegister(self)).c_str());
         }
         catch (const triton::exceptions::Exception& e) {
           return PyErr_Format(PyExc_TypeError, "%s", e.what());
@@ -357,11 +372,12 @@ namespace triton {
         {"getExtendType",     Register_getExtendType,     METH_NOARGS,    ""},
         {"getId",             Register_getId,             METH_NOARGS,    ""},
         {"getName",           Register_getName,           METH_NOARGS,    ""},
-        {"getShiftType",      Register_getShiftType,      METH_NOARGS,    ""},
         {"getShiftImmediate", Register_getShiftImmediate, METH_NOARGS,    ""},
         {"getShiftRegister",  Register_getShiftRegister,  METH_NOARGS,    ""},
+        {"getShiftType",      Register_getShiftType,      METH_NOARGS,    ""},
         {"getSize",           Register_getSize,           METH_NOARGS,    ""},
         {"getType",           Register_getType,           METH_NOARGS,    ""},
+        {"getVASType",        Register_getVASType,        METH_NOARGS,    ""},
         {"isMutable",         Register_isMutable,         METH_NOARGS,    ""},
         {"isOverlapWith",     Register_isOverlapWith,     METH_O,         ""},
         {nullptr,             nullptr,                    0,              nullptr}

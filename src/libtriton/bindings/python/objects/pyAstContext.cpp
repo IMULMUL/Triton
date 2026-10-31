@@ -13,8 +13,8 @@
 #include <triton/exceptions.hpp>
 #include <triton/register.hpp>
 #ifdef TRITON_Z3_INTERFACE
-  #include <triton/tritonToZ3Ast.hpp>
-  #include <triton/z3ToTritonAst.hpp>
+  #include <triton/tritonToZ3.hpp>
+  #include <triton/z3ToTriton.hpp>
 #endif
 
 #include <cstring>
@@ -57,6 +57,18 @@ This class is used to build your own AST nodes.
 \anchor ast
 \section AstContext_py_api Python API - Methods of the AstContext class
 <hr>
+
+- <b>\ref py_AstNode_page array(integer addrSize)</b><br>
+Creates an `array` node.<br>
+e.g: `(Array (_ BitVec addrSize) (_ BitVec 8))`.
+
+- <b>\ref py_AstNode_page assert_(\ref py_AstNode_page node)</b><br>
+Creates a `assert` node.
+e.g: `(assert node)`.
+
+- <b>\ref py_AstNode_page bswap(\ref py_AstNode_page node)</b><br>
+Creates a `bswap` node.
+e.g: `(bswap node)`.
 
 - <b>\ref py_AstNode_page bv(integer value, integer size)</b><br>
 Creates a `bv` node (bitvector). The `size` must be in bits.<br>
@@ -187,6 +199,10 @@ e.g: `(bvxor node1 epxr2)`.
 - <b>\ref py_AstNode_page concat([\ref py_AstNode_page, ...])</b><br>
 Concatenates several nodes.
 
+- <b>\ref py_AstNode_page declare(\ref py_AstNode_page sort)</b><br>
+Declare a function without argument. Mainly used to delcare a variable or an array.<br>
+e.g: `(declare-fun SymVar_0 () (_ BitVec 64))`
+
 - <b>\ref py_AstNode_page distinct(\ref py_AstNode_page node1, \ref py_AstNode_page node2)</b><br>
 Creates a `distinct` node.<br>
 e.g: `(distinct node1 node2)`
@@ -199,7 +215,7 @@ e.g: `(= node1 epxr2)`.
 Creates an `extract` node. The `high` and `low` fields represent the bits position.<br>
 e.g: `((_ extract high low) node1)`.
 
-- <b>\ref py_AstNode_page forall([\ref py_AstNode_page var, ...], \ref py_AstNode_page body)</b><br>
+- <b>\ref py_AstNode_page forall([\ref py_AstNode_page, ...], \ref py_AstNode_page body)</b><br>
 Creates an `forall` node.<br>
 e.g: `(forall ((x (_ BitVec <size>)), ...) body)`.
 
@@ -235,6 +251,14 @@ e.g: `(xor node1 node2 node3 node4)`.
 Creates a reference node (SSA-based).<br>
 e.g: `ref!123`.
 
+- <b>\ref py_AstNode_page select(\ref py_AstNode_page array, \ref py_AstNode_page index)</b><br>
+Creates a `select` node.<br>
+e.g: `(select array index)`.
+
+- <b>\ref py_AstNode_page store(\ref py_AstNode_page array, \ref py_AstNode_page index, \ref py_AstNode_page expr)</b><br>
+Creates a `store` node.<br>
+e.g: `(store array index expr)`.
+
 - <b>\ref py_AstNode_page string(string s)</b><br>
 Creates a `string` node.
 
@@ -262,13 +286,13 @@ Duplicates the node and returns a new instance as \ref py_AstNode_page.
 - <b>[\ref py_AstNode_page, ...] search(\ref py_AstNode_page node, \ref py_AST_NODE_page match)</b><br>
 Returns a list of collected matched nodes via a depth-first pre order traversal.
 
-- <b>z3::expr tritonToZ3(\ref py_AstNode_page node)</b><br>
+- <b>z3.ExprRef tritonToZ3(\ref py_AstNode_page node)</b><br>
 Convert a Triton AST to a Z3 AST.
 
 - <b>\ref py_AstNode_page unroll(\ref py_AstNode_page node)</b><br>
 Unrolls the SSA form of a given AST.
 
-- <b>\ref py_AstNode_page z3ToTriton(z3::expr expr)</b><br>
+- <b>\ref py_AstNode_page z3ToTriton(z3.ExprRef expr)</b><br>
 Convert a Z3 AST to a Triton AST.
 
 
@@ -346,12 +370,38 @@ namespace triton {
       }
 
 
+      static PyObject* AstContext_array(PyObject* self, PyObject* op1) {
+        if (!PyLong_Check(op1) && !PyInt_Check(op1))
+          return PyErr_Format(PyExc_TypeError, "array(): expected an integer as first argument");
+
+        try {
+          return PyAstNode(PyAstContext_AsAstContext(self)->array(PyLong_AsUint32(op1)));
+        }
+        catch (const triton::exceptions::Exception& e) {
+          return PyErr_Format(PyExc_TypeError, "%s", e.what());
+        }
+      }
+
+
       static PyObject* AstContext_assert(PyObject* self, PyObject* op1) {
         if (!PyAstNode_Check(op1))
           return PyErr_Format(PyExc_TypeError, "assert_(): expected a AstNode as first argument");
 
         try {
           return PyAstNode(PyAstContext_AsAstContext(self)->assert_(PyAstNode_AsAstNode(op1)));
+        }
+        catch (const triton::exceptions::Exception& e) {
+          return PyErr_Format(PyExc_TypeError, "%s", e.what());
+        }
+      }
+
+
+      static PyObject* AstContext_bswap(PyObject* self, PyObject* op1) {
+        if (!PyAstNode_Check(op1))
+          return PyErr_Format(PyExc_TypeError, "bswap(): expected a AstNode as first argument");
+
+        try {
+          return PyAstNode(PyAstContext_AsAstContext(self)->bswap(PyAstNode_AsAstNode(op1)));
         }
         catch (const triton::exceptions::Exception& e) {
           return PyErr_Format(PyExc_TypeError, "%s", e.what());
@@ -1077,12 +1127,12 @@ namespace triton {
       }
 
 
-      static PyObject* AstContext_declare(PyObject* self, PyObject* var) {
-        if (!PyAstNode_Check(var))
+      static PyObject* AstContext_declare(PyObject* self, PyObject* sort) {
+        if (!PyAstNode_Check(sort))
           return PyErr_Format(PyExc_TypeError, "declare(): expected a AstNode as argument");
 
         try {
-          return PyAstNode(PyAstContext_AsAstContext(self)->declare(PyAstNode_AsAstNode(var)));
+          return PyAstNode(PyAstContext_AsAstContext(self)->declare(PyAstNode_AsAstNode(sort)));
         }
         catch (const triton::exceptions::Exception& e) {
           return PyErr_Format(PyExc_TypeError, "%s", e.what());
@@ -1491,6 +1541,60 @@ namespace triton {
       }
 
 
+      static PyObject* AstContext_select(PyObject* self, PyObject* args) {
+        PyObject* op1 = nullptr;
+        PyObject* op2 = nullptr;
+
+        /* Extract arguments */
+        PyArg_ParseTuple(args, "|OO", &op1, &op2);
+
+        if (op1 == nullptr || !PyAstNode_Check(op1))
+          return PyErr_Format(PyExc_TypeError, "select(): expected a AstNode as first argument");
+
+        if (op2 == nullptr || (!PyAstNode_Check(op2) && !PyLong_Check(op2) && !PyInt_Check(op2)))
+          return PyErr_Format(PyExc_TypeError, "select(): expected a AstNode or an integer as second argument");
+
+        try {
+          if (PyAstNode_Check(op2))
+            return PyAstNode(PyAstContext_AsAstContext(self)->select(PyAstNode_AsAstNode(op1), PyAstNode_AsAstNode(op2)));
+          else
+            return PyAstNode(PyAstContext_AsAstContext(self)->select(PyAstNode_AsAstNode(op1), PyLong_AsUsize(op2)));
+        }
+        catch (const triton::exceptions::Exception& e) {
+          return PyErr_Format(PyExc_TypeError, "%s", e.what());
+        }
+      }
+
+
+      static PyObject* AstContext_store(PyObject* self, PyObject* args) {
+        PyObject* op1 = nullptr;
+        PyObject* op2 = nullptr;
+        PyObject* op3 = nullptr;
+
+        /* Extract arguments */
+        PyArg_ParseTuple(args, "|OOO", &op1, &op2, &op3);
+
+        if (op1 == nullptr || !PyAstNode_Check(op1))
+          return PyErr_Format(PyExc_TypeError, "store(): expected a AstNode as first argument");
+
+        if (op2 == nullptr || (!PyAstNode_Check(op2) && !PyLong_Check(op2) && !PyInt_Check(op2)))
+          return PyErr_Format(PyExc_TypeError, "select(): expected a AstNode or an integer as second argument");
+
+        if (op3 == nullptr || !PyAstNode_Check(op3))
+          return PyErr_Format(PyExc_TypeError, "store(): expected a AstNode as third argument");
+
+        try {
+          if (PyAstNode_Check(op2))
+            return PyAstNode(PyAstContext_AsAstContext(self)->store(PyAstNode_AsAstNode(op1), PyAstNode_AsAstNode(op2), PyAstNode_AsAstNode(op3)));
+          else
+            return PyAstNode(PyAstContext_AsAstContext(self)->store(PyAstNode_AsAstNode(op1), PyLong_AsUsize(op2), PyAstNode_AsAstNode(op3)));
+        }
+        catch (const triton::exceptions::Exception& e) {
+          return PyErr_Format(PyExc_TypeError, "%s", e.what());
+        }
+      }
+
+
       static PyObject* AstContext_string(PyObject* self, PyObject* expr) {
         if (!PyStr_Check(expr))
           return PyErr_Format(PyExc_TypeError, "string(): expected a string as first argument");
@@ -1581,7 +1685,7 @@ namespace triton {
 
       #ifdef TRITON_Z3_INTERFACE
       static PyObject* AstContext_tritonToZ3(PyObject* self, PyObject* node) {
-        triton::ast::TritonToZ3Ast tritonToZ3Ast{false};
+        triton::ast::TritonToZ3 tritonToZ3{false};
 
         if (node == nullptr || (!PyAstNode_Check(node)))
           return PyErr_Format(PyExc_TypeError, "tritonToZ3(): Expects a AstNode as argument.");
@@ -1601,7 +1705,7 @@ namespace triton {
 
         // Convert the node to a Z3++ expression and translate it into
         // python's z3 main context
-        z3::expr expr = tritonToZ3Ast.convert(PyAstNode_AsAstNode(node));
+        z3::expr expr = tritonToZ3.convert(PyAstNode_AsAstNode(node));
         Z3_ast ast    = Z3_translate(expr.ctx(), expr, z3Ctx);
 
         // Check that everything went fine
@@ -1632,8 +1736,8 @@ namespace triton {
 
 
       static PyObject* AstContext_z3ToTriton(PyObject* self, PyObject* expr) {
-        triton::ast::Z3ToTritonAst  z3ToTritonAst{PyAstContext_AsAstContext(self)};
-        z3::context                 z3Ctx;
+        triton::ast::Z3ToTriton z3ToTritonAst{PyAstContext_AsAstContext(self)};
+        z3::context z3Ctx;
 
         if (std::strcmp(Py_TYPE(expr)->tp_name, "ExprRef") && std::strcmp(Py_TYPE(expr)->tp_name, "BitVecRef"))
           return PyErr_Format(PyExc_TypeError, "z3ToTriton(): expected an ExprRef as argument");
@@ -1671,7 +1775,9 @@ namespace triton {
 
       //! AstContext methods.
       PyMethodDef AstContext_callbacks[] = {
+        {"array",           AstContext_array,           METH_O,           ""},
         {"assert_",         AstContext_assert,          METH_O,           ""},
+        {"bswap",           AstContext_bswap,           METH_O,           ""},
         {"bv",              AstContext_bv,              METH_VARARGS,     ""},
         {"bvadd",           AstContext_bvadd,           METH_VARARGS,     ""},
         {"bvand",           AstContext_bvand,           METH_VARARGS,     ""},
@@ -1721,6 +1827,8 @@ namespace triton {
         {"lor",             AstContext_lor,             METH_O,           ""},
         {"lxor",            AstContext_lxor,            METH_O,           ""},
         {"reference",       AstContext_reference,       METH_O,           ""},
+        {"select",          AstContext_select,          METH_VARARGS,     ""},
+        {"store",           AstContext_store,           METH_VARARGS,     ""},
         {"search",          AstContext_search,          METH_VARARGS,     ""},
         {"string",          AstContext_string,          METH_O,           ""},
         {"sx",              AstContext_sx,              METH_VARARGS,     ""},
@@ -1798,8 +1906,8 @@ namespace triton {
       };
 
 
-      PyObject* PyAstContext(const triton::ast::SharedAstContext& ctxt) {
-        if (ctxt == nullptr) {
+      PyObject* PyAstContext(const triton::ast::SharedAstContext& actx) {
+        if (actx == nullptr) {
           Py_INCREF(Py_None);
           return Py_None;
         }
@@ -1807,7 +1915,7 @@ namespace triton {
         PyType_Ready(&AstContext_Type);
         auto* object = (triton::bindings::python::AstContext_Object*)PyObject_CallObject((PyObject*)&AstContext_Type, nullptr);
         if (object != NULL) {
-          object->ctxt = ctxt;
+          object->actx = actx;
         }
 
         return (PyObject*)object;

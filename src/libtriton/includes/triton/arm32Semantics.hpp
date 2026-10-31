@@ -8,6 +8,7 @@
 #ifndef TRITON_ARM32SEMANTICS_H
 #define TRITON_ARM32SEMANTICS_H
 
+#include <triton/archEnums.hpp>
 #include <triton/architecture.hpp>
 #include <triton/dllexport.hpp>
 #include <triton/instruction.hpp>
@@ -64,6 +65,9 @@ namespace triton {
             //! The AST Context API
             triton::ast::SharedAstContext astCtxt;
 
+            //! Exception status
+            triton::arch::exception_e exception;
+
           public:
             //! Constructor.
             TRITON_EXPORT Arm32Semantics(triton::arch::Architecture* architecture,
@@ -71,8 +75,8 @@ namespace triton {
                                          triton::engines::taint::TaintEngine* taintEngine,
                                          const triton::ast::SharedAstContext& astCtxt);
 
-            //! Builds the semantics of the instruction. Returns true if the instruction is supported.
-            TRITON_EXPORT bool buildSemantics(triton::arch::Instruction& inst);
+            //! Builds the semantics of the instruction. Returns `triton::arch::NO_FAULT` if succeed.
+            TRITON_EXPORT triton::arch::exception_e buildSemantics(triton::arch::Instruction& inst);
 
           private:
             //! Rotates right.
@@ -276,6 +280,9 @@ namespace triton {
             //! The B semantics.
             void b_s(triton::arch::Instruction& inst);
 
+            //! The BFC semantics.
+            void bfc_s(triton::arch::Instruction& inst);
+
             //! The BFI semantics.
             void bfi_s(triton::arch::Instruction& inst);
 
@@ -306,6 +313,9 @@ namespace triton {
             //! The EOR semantics.
             void eor_s(triton::arch::Instruction& inst);
 
+            //! The IT semantics.
+            void it_s(triton::arch::Instruction& inst);
+
             //! The LDM semantics.
             void ldm_s(triton::arch::Instruction& inst);
 
@@ -314,6 +324,9 @@ namespace triton {
 
             //! The LDRB semantics.
             void ldrb_s(triton::arch::Instruction& inst);
+
+            //! The LDREX semantics.
+            void ldrex_s(triton::arch::Instruction& inst);
 
             //! The LDRH semantics.
             void ldrh_s(triton::arch::Instruction& inst);
@@ -332,6 +345,12 @@ namespace triton {
 
             //! The LSR semantics.
             void lsr_s(triton::arch::Instruction& inst);
+
+            //! The MLA semantics.
+            void mla_s(triton::arch::Instruction& inst);
+
+            //! The MLS semantics.
+            void mls_s(triton::arch::Instruction& inst);
 
             //! The MOV semantics.
             void mov_s(triton::arch::Instruction& inst);
@@ -354,6 +373,12 @@ namespace triton {
             //! The ORR semantics.
             void orr_s(triton::arch::Instruction& inst);
 
+            //! The PKHBT semantics.
+            void pkhbt_s(triton::arch::Instruction& inst);
+
+            //! The PKHTB semantics.
+            void pkhtb_s(triton::arch::Instruction& inst);
+
             //! The POP semantics.
             void pop_s(triton::arch::Instruction& inst);
 
@@ -365,6 +390,9 @@ namespace triton {
 
             //! The REV16 semantics.
             void rev16_s(triton::arch::Instruction& inst);
+
+            //! The REVSH semantics.
+            void revsh_s(triton::arch::Instruction& inst);
 
             //! The REV semantics.
             void rev_s(triton::arch::Instruction& inst);
@@ -390,6 +418,21 @@ namespace triton {
             //! The SDIV semantics.
             void sdiv_s(triton::arch::Instruction& inst);
 
+            //! The SMLABB semantics.
+            void smlabb_s(triton::arch::Instruction& inst);
+
+            //! The SMLABT semantics.
+            void smlabt_s(triton::arch::Instruction& inst);
+
+            //! The SMLATB semantics.
+            void smlatb_s(triton::arch::Instruction& inst);
+
+            //! The SMLATT semantics.
+            void smlatt_s(triton::arch::Instruction& inst);
+
+            //! The SMLAL semantics.
+            void smlal_s(triton::arch::Instruction& inst);
+
             //! The SMULL semantics.
             void smull_s(triton::arch::Instruction& inst);
 
@@ -408,20 +451,41 @@ namespace triton {
             //! The STRD semantics.
             void strd_s(triton::arch::Instruction& inst);
 
+            //! The STREX semantics.
+            void strex_s(triton::arch::Instruction& inst);
+
             //! The STRH semantics.
             void strh_s(triton::arch::Instruction& inst);
 
             //! The SUB semantics.
             void sub_s(triton::arch::Instruction& inst);
 
+            //! The SXTAB semantics.
+            void sxtab_s(triton::arch::Instruction& inst);
+
+            //! The SXTAB16 semantics.
+            void sxtab16_s(triton::arch::Instruction& inst);
+
+            //! The SXTAH semantics.
+            void sxtah_s(triton::arch::Instruction& inst);
+
             //! The SXTB semantics.
             void sxtb_s(triton::arch::Instruction &inst);
+
+            //! The SXTB16 semantics.
+            void sxtb16_s(triton::arch::Instruction& inst);
 
             //! The SXTH semantics.
             void sxth_s(triton::arch::Instruction &inst);
 
             //! The TST semantics.
             void tst_s(triton::arch::Instruction& inst);
+
+            //! The TBB semantics.
+            void tbb_s(triton::arch::Instruction& inst);
+
+            //! The TBH semantics.
+            void tbh_s(triton::arch::Instruction& inst);
 
             //! The TEQ semantics.
             void teq_s(triton::arch::Instruction& inst);
@@ -432,11 +496,29 @@ namespace triton {
             //! The UDIV semantics.
             void udiv_s(triton::arch::Instruction& inst);
 
+            //! The UMAAL semantics.
+            void umaal_s(triton::arch::Instruction& inst);
+
+            //! The UMLAL semantics.
+            void umlal_s(triton::arch::Instruction& inst);
+
             //! The UMULL semantics.
             void umull_s(triton::arch::Instruction& inst);
 
+            //! The UXTAB semantics.
+            void uxtab_s(triton::arch::Instruction& inst);
+
+            //! The UXTAB16 semantics.
+            void uxtab16_s(triton::arch::Instruction& inst);
+
+            //! The UXTAH semantics.
+            void uxtah_s(triton::arch::Instruction& inst);
+
             //! The UXTB semantics.
             void uxtb_s(triton::arch::Instruction & inst);
+
+            //! The UXTB16 semantics.
+            void uxtb16_s(triton::arch::Instruction& inst);
 
             //! The UXTH semantics.
             void uxth_s(triton::arch::Instruction & inst);

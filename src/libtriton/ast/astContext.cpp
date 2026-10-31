@@ -36,8 +36,8 @@ namespace triton {
 
       this->astRepresentation = other.astRepresentation;
       this->modes             = other.modes;
-      this->valueMapping      = other.valueMapping;
       this->nodes             = other.nodes;
+      this->valueMapping      = other.valueMapping;
 
       return *this;
     }
@@ -71,10 +71,28 @@ namespace triton {
     }
 
 
+    SharedAbstractNode AstContext::array(triton::uint32 indexSize) {
+      SharedAbstractNode node = std::make_shared<ArrayNode>(indexSize, this->shared_from_this());
+      if (node == nullptr)
+        throw triton::exceptions::Ast("AstContext::array(): Not enough memory.");
+      node->init();
+      return this->collect(node);
+    }
+
+
     SharedAbstractNode AstContext::assert_(const SharedAbstractNode& expr) {
       SharedAbstractNode node = std::make_shared<AssertNode>(expr);
       if (node == nullptr)
         throw triton::exceptions::Ast("AstContext::assert_(): Not enough memory.");
+      node->init();
+      return this->collect(node);
+    }
+
+
+    SharedAbstractNode AstContext::bswap(const SharedAbstractNode& expr) {
+      SharedAbstractNode node = std::make_shared<BswapNode>(expr);
+      if (node == nullptr)
+        throw triton::exceptions::Ast("AstContext::bswap(): Not enough memory.");
       node->init();
       return this->collect(node);
     }
@@ -335,7 +353,9 @@ namespace triton {
           return this->bv(expr2->getBitvectorMask(), expr2->getBitvectorSize());
 
         /* Optimization: A | A = A */
-        if (expr1->equalTo(expr2))
+        /* Only apply when both operands are concrete. Two different symbolic expressions
+         * may evaluate to the same value but represent distinct computations. */
+        if (!expr1->isSymbolized() && !expr2->isSymbolized() && expr1->equalTo(expr2))
           return expr1;
       }
 
@@ -376,7 +396,7 @@ namespace triton {
        * in order to make index rotation symbolic. Note that this mode increases the
        * complexity of solving.
        *
-       * bvrol(rot, expr) = ((expr << (rot % size)) | (expr >> (size - (rot % size))))
+       * bvrol(expr, rot) = ((expr << (rot % size)) | (expr >> (size - (rot % size))))
        **/
       if (this->modes->isModeEnabled(triton::modes::SYMBOLIZE_INDEX_ROTATION)) {
         auto size        = expr->getBitvectorSize();
@@ -426,7 +446,7 @@ namespace triton {
        * in order to make index rotation symbolic. Note that this mode increases the
        * complexity of solving.
        *
-       * bvror(rot, expr) = ((value >> (rot % size)) | (value << (size - (rot % size))))
+       * bvror(expr, rot) = ((expr >> (rot % size)) | (expr << (size - (rot % size))))
        **/
       if (this->modes->isModeEnabled(triton::modes::SYMBOLIZE_INDEX_ROTATION)) {
         auto size        = expr->getBitvectorSize();
@@ -585,7 +605,9 @@ namespace triton {
           return this->bvneg(expr2);
 
         /* Optimization: A - A = 0 */
-        if (expr1->equalTo(expr2))
+        /* Only apply when both operands are concrete to preserve symbolic information.
+         * Different symbolic expressions may evaluate equal but must remain distinct. */
+        if (!expr1->isSymbolized() && !expr2->isSymbolized() && expr1->equalTo(expr2))
           return this->bv(0, expr1->getBitvectorSize());
       }
 
@@ -714,7 +736,10 @@ namespace triton {
           return expr2;
 
         /* Optimization: A ^ A = 0 */
-        if (expr1->equalTo(expr2))
+        /* Only apply when both operands are concrete to avoid losing symbolic information.
+         * Two different symbolic expressions may have the same concrete value temporarily,
+         * but they represent different symbolic computations that must be preserved. */
+        if (!expr1->isSymbolized() && !expr2->isSymbolized() && expr1->equalTo(expr2))
           return this->bv(0, expr1->getBitvectorSize());
       }
 
@@ -751,7 +776,7 @@ namespace triton {
 
       if (this->modes->isModeEnabled(triton::modes::AST_OPTIMIZATIONS)) {
         /* Optimization: concatenate extractions in one if possible */
-        auto n = this->simplify_concat(std::vector<SharedAbstractNode>({expr1, expr2}));
+        SharedAbstractNode n = this->simplify_concat(std::vector<SharedAbstractNode>({expr1, expr2}));
         if (n) {
           return n;
         }
@@ -798,7 +823,7 @@ namespace triton {
         return expr;
 
       if (this->modes->isModeEnabled(triton::modes::AST_OPTIMIZATIONS)) {
-        auto n = this->simplify_extract(high, low, expr);
+        SharedAbstractNode n = this->simplify_extract(high, low, expr);
         if (n) {
           return n;
         }
@@ -920,6 +945,42 @@ namespace triton {
       SharedAbstractNode node = std::make_shared<ReferenceNode>(expr);
       if (node == nullptr)
         throw triton::exceptions::Ast("AstContext::reference(): Not enough memory.");
+      node->init();
+      return this->collect(node);
+    }
+
+
+    SharedAbstractNode AstContext::select(const SharedAbstractNode& array, triton::usize index) {
+      SharedAbstractNode node = std::make_shared<SelectNode>(array, index);
+      if (node == nullptr)
+        throw triton::exceptions::Ast("AstContext::select(): Not enough memory.");
+      node->init();
+      return this->collect(node);
+    }
+
+
+    SharedAbstractNode AstContext::select(const SharedAbstractNode& array, const SharedAbstractNode& index) {
+      SharedAbstractNode node = std::make_shared<SelectNode>(array, index);
+      if (node == nullptr)
+        throw triton::exceptions::Ast("AstContext::select(): Not enough memory.");
+      node->init();
+      return this->collect(node);
+    }
+
+
+    SharedAbstractNode AstContext::store(const SharedAbstractNode& array, triton::usize index, const SharedAbstractNode& expr) {
+      SharedAbstractNode node = std::make_shared<StoreNode>(array, index, expr);
+      if (node == nullptr)
+        throw triton::exceptions::Ast("AstContext::store(): Not enough memory.");
+      node->init();
+      return this->collect(node);
+    }
+
+
+    SharedAbstractNode AstContext::store(const SharedAbstractNode& array, const SharedAbstractNode& index, const SharedAbstractNode& expr) {
+      SharedAbstractNode node = std::make_shared<StoreNode>(array, index, expr);
+      if (node == nullptr)
+        throw triton::exceptions::Ast("AstContext::store(): Not enough memory.");
       node->init();
       return this->collect(node);
     }
@@ -1054,12 +1115,12 @@ namespace triton {
     }
 
 
-    void AstContext::setRepresentationMode(triton::uint32 mode) {
+    void AstContext::setRepresentationMode(triton::ast::representations::mode_e mode) {
       this->astRepresentation.setMode(mode);
     }
 
 
-    triton::uint32 AstContext::getRepresentationMode(void) const {
+    triton::ast::representations::mode_e AstContext::getRepresentationMode(void) const {
       return this->astRepresentation.getMode();
     }
 
@@ -1090,7 +1151,7 @@ namespace triton {
       /* Try to join all extractions into one from the right to the left */
       while (!exprs.empty()) {
         /* Get the right most node */
-        auto n = exprs.back();
+        SharedAbstractNode n = exprs.back();
         exprs.pop_back();
 
         /* Returns the first non referene node encountered */
@@ -1098,7 +1159,7 @@ namespace triton {
 
         if (n->getType() == CONCAT_NODE) {
           /* Append concatenation children to the right */
-          for (const auto& part : n->getChildren()) {
+          for (const SharedAbstractNode& part : n->getChildren()) {
             exprs.push_back(part);
           }
           continue;
@@ -1111,8 +1172,8 @@ namespace triton {
 
         /* Get extraction arguments */
         const auto& childs = n->getChildren();
-        auto hi = reinterpret_cast<IntegerNode*>(childs[0].get())->getInteger().convert_to<uint32>();
-        auto lo = reinterpret_cast<IntegerNode*>(childs[1].get())->getInteger().convert_to<uint32>();
+        triton::uint32 hi = triton::ast::getInteger<triton::uint32>(childs[0]);
+        triton::uint32 lo = triton::ast::getInteger<triton::uint32>(childs[1]);
         if (hi < lo) {
           return 0;
         }
@@ -1151,16 +1212,16 @@ namespace triton {
 
 
     SharedAbstractNode AstContext::simplify_extract(triton::uint32 high, triton::uint32 low, const SharedAbstractNode& expr) {
-      auto size = expr->getBitvectorSize();
+      triton::uint32 size = expr->getBitvectorSize();
 
       if (high <= low || high >= size) {
         return 0;
       }
 
-      auto node = expr;
+      SharedAbstractNode node = expr;
       while (true) {
         /* Returns the first non referene node encountered */
-        auto n = triton::ast::dereference(node);
+        SharedAbstractNode n = triton::ast::dereference(node);
 
         if (n->getType() == CONCAT_NODE) {
           /*
@@ -1172,17 +1233,17 @@ namespace triton {
            * ((_ extract 11 9) (concat (_ bv1 8) (_ bv2 8) (_ bv3 8) (_ bv4 8))) =>
            * ((_ extract 3 1) (_ bv3 8))
            */
-          auto hi = n->getBitvectorSize() - 1;
+          triton::uint32 hi = n->getBitvectorSize() - 1;
           bool found = false;
           /* Search for part of concatenation we can extract from. Iterate
            * from the left to the right. */
-          for (const auto& part : n->getChildren()) {
+          for (const SharedAbstractNode& part : n->getChildren()) {
             if (hi < high) {
               /* Did not find a part we can extract from */
               break;
             }
-            auto sz = part->getBitvectorSize();
-            auto lo = hi + 1 - sz;
+            triton::uint32 sz = part->getBitvectorSize();
+            triton::uint32 lo = hi + 1 - sz;
             if (hi == high && lo == low) {
               /* We are extracting the full part, just return it */
               return part;
@@ -1213,7 +1274,7 @@ namespace triton {
            * ((_ extract 7 0) (_ bv1 32))
            **/
           n = n->getChildren()[1];
-          auto sz = n->getBitvectorSize();
+          triton::uint32 sz = n->getBitvectorSize();
           if (low == 0 && high + 1 == sz) {
             /* Just return the node being extended */
             return n;
@@ -1228,7 +1289,7 @@ namespace triton {
       }
 
       /* Returns the first non referene node encountered */
-      auto n = triton::ast::dereference(node);
+      SharedAbstractNode n = triton::ast::dereference(node);
 
       /*
        * Optimization: extract from extract is one extract
@@ -1238,8 +1299,8 @@ namespace triton {
        **/
       if (n->getType() == EXTRACT_NODE) {
         const auto& childs = n->getChildren();
-        auto hi = reinterpret_cast<IntegerNode*>(childs[0].get())->getInteger().convert_to<uint32>();
-        auto lo = reinterpret_cast<IntegerNode*>(childs[1].get())->getInteger().convert_to<uint32>();
+        triton::uint32 hi = triton::ast::getInteger<triton::uint32>(childs[0]);
+        triton::uint32 lo = triton::ast::getInteger<triton::uint32>(childs[1]);
         if (lo + high <= hi) {
           node = childs[2];
           high += lo;

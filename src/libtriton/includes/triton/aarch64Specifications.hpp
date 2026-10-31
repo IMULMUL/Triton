@@ -73,9 +73,18 @@ namespace triton {
             //! Converts a capstone's condition id to a triton's condition id.
             TRITON_EXPORT triton::arch::arm::condition_e capstoneConditionToTritonCondition(triton::uint32 id) const;
 
+            //! Converts a capstone's vas id to a triton's vas id.
+            TRITON_EXPORT triton::arch::arm::vas_e capstoneVASToTritonVAS(triton::uint32 id) const;
+
             //! Converts a capstone's instruction id to a triton's instruction id.
             TRITON_EXPORT triton::uint32 capstoneInstructionToTritonInstruction(triton::uint32 id) const;
+
+            //! Returns memory access size if it is specified by instruction.
+            TRITON_EXPORT triton::uint32 getMemoryOperandSpecialSize(triton::uint32 id) const;
         };
+
+        //! AArch64 NOP instruction
+        const triton::arch::Instruction nop = triton::arch::Instruction("\x1f\x20\x03\xd5", 4);
 
         //! The list of opcodes.
         enum instruction_e {
@@ -102,7 +111,15 @@ namespace triton {
           ID_INS_BIT, //!< bit
           ID_INS_BL, //!< bl
           ID_INS_BLR, //!< blr
+          ID_INS_BLRAA, //!< blraa
+          ID_INS_BLRAAZ, //!< blraaz
+          ID_INS_BLRAB, //!< blrab
+          ID_INS_BLRABZ, //!< blrabz
           ID_INS_BR, //!< br
+          ID_INS_BRAA, //!< braa
+          ID_INS_BRAAZ, //!< braaz
+          ID_INS_BRAB, //!< brab
+          ID_INS_BRABZ, //!< brabz
           ID_INS_BRK, //!< brk
           ID_INS_BSL, //!< bsl
           ID_INS_CBNZ, //!< cbnz
@@ -233,6 +250,15 @@ namespace triton {
           ID_INS_LDARB, //!< ldarb
           ID_INS_LDARH, //!< ldarh
           ID_INS_LDAR, //!< ldar
+          ID_INS_LDAPR, //!< ldapr
+          ID_INS_LDAPRB, //!< ldaprb
+          ID_INS_LDAPRH, //!< ldaprh
+          ID_INS_LDAPUR, //!< ldapur
+          ID_INS_LDAPURB, //!< ldapurb
+          ID_INS_LDAPURH, //!< ldapurh
+          ID_INS_LDAPURSB, //!< ldapursb
+          ID_INS_LDAPURSH, //!< ldapursh
+          ID_INS_LDAPURSW, //!< ldapursw
           ID_INS_LDAXP, //!< ldaxp
           ID_INS_LDAXRB, //!< ldaxrb
           ID_INS_LDAXRH, //!< ldaxrh
@@ -280,6 +306,21 @@ namespace triton {
           ID_INS_NOT, //!< not
           ID_INS_ORN, //!< orn
           ID_INS_ORR, //!< orr
+          ID_INS_PACDA, //!< pacda
+          ID_INS_PACDB, //!< pacdb
+          ID_INS_PACDZA, //!< pacdza
+          ID_INS_PACDZB, //!< pacdzb
+          ID_INS_PACGA, //!< pacga
+          ID_INS_PACIA, //!< pacia
+          ID_INS_PACIA1716, //!< pacia1716
+          ID_INS_PACIASP, //!< paciasp
+          ID_INS_PACIAZ, //!< paciaz
+          ID_INS_PACIB, //!< pacib
+          ID_INS_PACIB1716, //!< pacib1716
+          ID_INS_PACIBSP, //!< pacibsp
+          ID_INS_PACIBZ, //!< pacibz
+          ID_INS_PACIZA, //!< paciza
+          ID_INS_PACIZB, //!< pacizb
           ID_INS_PMULL2, //!< pmull2
           ID_INS_PMULL, //!< pmull
           ID_INS_PMUL, //!< pmul
@@ -398,6 +439,9 @@ namespace triton {
           ID_INS_STLRB, //!< stlrb
           ID_INS_STLRH, //!< stlrh
           ID_INS_STLR, //!< stlr
+          ID_INS_STLURB, //!< stlurb
+          ID_INS_STLURH, //!< stlurh
+          ID_INS_STLUR, //!< stlur
           ID_INS_STLXP, //!< stlxp
           ID_INS_STLXRB, //!< stlxrb
           ID_INS_STLXRH, //!< stlxrh
@@ -494,6 +538,9 @@ namespace triton {
           ID_INS_UZP2, //!< uzp2
           ID_INS_XTN2, //!< xtn2
           ID_INS_XTN, //!< xtn
+          ID_INS_XPACD, //!< xpacd
+          ID_INS_XPACI, //!< xpaci
+          ID_INS_XPACLRI, //!< xpaclri
           ID_INS_ZIP1, //!< zip1
           ID_INS_ZIP2, //!< zip2
 
@@ -533,6 +580,8 @@ namespace triton {
           ID_INS_DC, //!< dc
           ID_INS_AT, //!< at
           ID_INS_TLBI, //!< tlbi
+          ID_INS_NEGS, //!< negs
+          ID_INS_NGCS, //!< ngcs
 
           /* Must be the last item */
           ID_INS_LAST_ITEM //!< must be the last item

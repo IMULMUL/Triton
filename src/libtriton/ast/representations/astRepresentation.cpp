@@ -8,7 +8,10 @@
 #include <new>
 #include <memory>
 
+#include <triton/astPcodeRepresentation.hpp>
+#include <triton/astPythonRepresentation.hpp>
 #include <triton/astRepresentation.hpp>
+#include <triton/astSmtRepresentation.hpp>
 #include <triton/exceptions.hpp>
 
 
@@ -19,16 +22,20 @@ namespace triton {
 
       AstRepresentation::AstRepresentation() {
         /* Set the default representation */
-        this->mode = triton::ast::representations::SMT_REPRESENTATION;
+        this->mode = SMT_REPRESENTATION;
 
         /* Init representations interface */
-        this->representations[triton::ast::representations::SMT_REPRESENTATION] = std::unique_ptr<triton::ast::representations::AstSmtRepresentation>(new(std::nothrow) triton::ast::representations::AstSmtRepresentation());
-        this->representations[triton::ast::representations::PYTHON_REPRESENTATION] = std::unique_ptr<triton::ast::representations::AstPythonRepresentation>(new(std::nothrow) triton::ast::representations::AstPythonRepresentation());
+        this->representations[SMT_REPRESENTATION]    = std::unique_ptr<AstSmtRepresentation>(new(std::nothrow) AstSmtRepresentation());
+        this->representations[PYTHON_REPRESENTATION] = std::unique_ptr<AstPythonRepresentation>(new(std::nothrow) AstPythonRepresentation());
+        this->representations[PCODE_REPRESENTATION]  = std::unique_ptr<AstPcodeRepresentation>(new(std::nothrow) AstPcodeRepresentation());
 
-        if (this->representations[triton::ast::representations::SMT_REPRESENTATION] == nullptr)
+        if (this->representations[SMT_REPRESENTATION] == nullptr)
           throw triton::exceptions::AstRepresentation("AstRepresentation::AstRepresentation(): Cannot allocate a new representation instance.");
 
-        if (this->representations[triton::ast::representations::PYTHON_REPRESENTATION] == nullptr)
+        if (this->representations[PYTHON_REPRESENTATION] == nullptr)
+          throw triton::exceptions::AstRepresentation("AstRepresentation::AstRepresentation(): Cannot allocate a new representation instance.");
+
+        if (this->representations[PCODE_REPRESENTATION] == nullptr)
           throw triton::exceptions::AstRepresentation("AstRepresentation::AstRepresentation(): Cannot allocate a new representation instance.");
       }
 
@@ -45,12 +52,12 @@ namespace triton {
       }
 
 
-      triton::uint32 AstRepresentation::getMode(void) const {
+      triton::ast::representations::mode_e AstRepresentation::getMode(void) const {
         return this->mode;
       }
 
 
-      void AstRepresentation::setMode(triton::uint32 mode) {
+      void AstRepresentation::setMode(triton::ast::representations::mode_e mode) {
         if (mode >= triton::ast::representations::LAST_REPRESENTATION)
           throw triton::exceptions::AstRepresentation("AstRepresentation::setMode(): Invalid representation mode.");
         this->mode = mode;
@@ -64,4 +71,3 @@ namespace triton {
     };
   };
 };
-

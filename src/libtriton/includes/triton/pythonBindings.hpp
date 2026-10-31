@@ -9,8 +9,8 @@
 #define TRITONPYTHONBINDINGS_H
 
 #include <Python.h>
-#include <longintrepr.h>
-#if _WIN32
+
+#if defined(_WIN32) && !defined(__WINE__)
   #include <cmath>
   #define _hypot hypot
 #endif
@@ -81,8 +81,14 @@ namespace triton {
       //! Initializes the SHIFT python namespace.
       void initShiftsNamespace(PyObject* shiftDict);
 
+      //! Initializes the EXCEPTION python namespace.
+      void initExceptionNamespace(PyObject* exceptionDict);
+
       //! Initializes the EXTEND python namespace.
       void initExtendNamespace(PyObject* extendDict);
+
+      //! Initializes the VAS python namespace.
+      void initVASNamespace(PyObject* vasDict);
 
       //! Initializes the REG python namespace.
       void initRegNamespace(PyObject* regDict);
@@ -93,18 +99,14 @@ namespace triton {
       //! Initializes the SOLVER python namespace.
       void initSolverNamespace(PyObject* solverDict);
 
+      //! Initializes the SOLVER_STATE python namespace.
+      void initSolverStateNamespace(PyObject* solverStateDict);
+
+      //! Initializes the STUBS python namespace.
+      void initStubsNamespace(PyObject* stubsDict);
+
       //! Initializes the SYMBOLIC python namespace.
       void initSymbolicNamespace(PyObject* symbolicDict);
-
-      #if defined(__unix__) || defined(__APPLE__)
-      //! Initializes the SYSCALL32 python namespace.
-      void initSyscall64Namespace(PyObject* sys64Dict);
-
-      #if defined(__unix__)
-      //! Initializes the SYSCALL32 python namespace.
-      void initSyscall32Namespace(PyObject* sys32Dict);
-      #endif
-      #endif
 
       //! Initializes the VERSION python namespace.
       void initVersionNamespace(PyObject* versionDict);

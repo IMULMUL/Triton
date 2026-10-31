@@ -64,11 +64,17 @@ namespace triton {
           //! Copies a SolverModel
           TRITON_EXPORT SolverModel& operator=(const SolverModel& other);
 
+          //! Operator ==
+          TRITON_EXPORT bool operator==(const SolverModel& other) const;
+
           //! Returns the id of the variable.
           TRITON_EXPORT triton::usize getId(void) const;
 
           //! Returns the value of the model.
           TRITON_EXPORT triton::uint512 getValue(void) const;
+
+          //! Returns the size (in bits) of the symbolic variable.
+          TRITON_EXPORT triton::uint32 getSize(void) const;
 
           //! Returns the symbolic variable.
           TRITON_EXPORT const triton::engines::symbolic::SharedSymbolicVariable& getVariable(void) const;

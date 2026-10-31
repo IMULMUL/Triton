@@ -32,31 +32,41 @@ The MODE namespace contains all kinds of modes.
 <hr>
 
 - **MODE.ALIGNED_MEMORY**<br>
-Enabled, Triton will keep a map of aligned memory to reduce the symbolic memory explosion of `LOAD` and `STORE` accesses.
+Keeps a map of aligned memory to reduce the symbolic memory explosion of `LOAD` and `STORE` accesses.
 
 - **MODE.AST_OPTIMIZATIONS**<br>
-Enabled, Triton will reduces the depth of the trees using classical arithmetic optimisations.
+Reduces the depth of the trees using classical arithmetic optimisations.
 
 - **MODE.CONCRETIZE_UNDEFINED_REGISTERS**<br>
-Enabled, Triton will concretize every register tagged as undefined (see #750).
+Concretizes every register tagged as undefined (see #750).
 
 - **MODE.CONSTANT_FOLDING**<br>
-Enabled, Triton will perform a constant folding optimization of sub ASTs which do not contain symbolic variables.
+Performs a constant folding optimization of sub ASTs which do not contain symbolic variables.
+
+- **MODE.MEMORY_ARRAY**<br>
+Enables symbolic pointers reasoning (QF_ABV logic). When this mode is not enabled, which is the case by default, the QF_BV memory model is applied.
 
 - **MODE.ONLY_ON_SYMBOLIZED**<br>
-Enabled, Triton will perform symbolic execution only on symbolized expressions.
+Removes symbolic expressions that does not contain symbolic variable.
 
 - **MODE.ONLY_ON_TAINTED**<br>
-Enabled, Triton will perform symbolic execution only on tainted instructions.
+Removes symbolic expressions that are not tainted.
 
 - **MODE.PC_TRACKING_SYMBOLIC**<br>
-Enabled, Triton will track path constraints only if they are symbolized. This mode is enabled by default.
+Tracks path constraints only if they are symbolized. This mode is enabled by default.
 
 - **MODE.SYMBOLIZE_INDEX_ROTATION**<br>
-Enabled, Triton will symbolize the index of rotation for `bvror` and `bvrol` nodes. This mode increases the complexity of solving.
+Symbolizes the index of rotation for `bvror` and `bvrol` nodes. This mode increases the complexity of solving.
+
+- **MODE.SYMBOLIZE_LOAD**<br>
+Keeps symbolic expressions on load indexes (concretize them otherwise).
+
+- **MODE.SYMBOLIZE_STORE**<br>
+Keeps symbolic expressions on store indexes (concretize them otherwise).
 
 - **MODE.TAINT_THROUGH_POINTERS**<br>
-Enabled, the taint is spread if an index pointer is already tainted (see #725).
+Spreads taint in non `MEMORY_ARRAY` mode if an index pointer is tainted (see #725).
+
 */
 
 
@@ -70,10 +80,13 @@ namespace triton {
         xPyDict_SetItemString(modeDict, "AST_OPTIMIZATIONS",              PyLong_FromUint32(triton::modes::AST_OPTIMIZATIONS));
         xPyDict_SetItemString(modeDict, "CONCRETIZE_UNDEFINED_REGISTERS", PyLong_FromUint32(triton::modes::CONCRETIZE_UNDEFINED_REGISTERS));
         xPyDict_SetItemString(modeDict, "CONSTANT_FOLDING",               PyLong_FromUint32(triton::modes::CONSTANT_FOLDING));
+        xPyDict_SetItemString(modeDict, "MEMORY_ARRAY",                   PyLong_FromUint32(triton::modes::MEMORY_ARRAY));
         xPyDict_SetItemString(modeDict, "ONLY_ON_SYMBOLIZED",             PyLong_FromUint32(triton::modes::ONLY_ON_SYMBOLIZED));
         xPyDict_SetItemString(modeDict, "ONLY_ON_TAINTED",                PyLong_FromUint32(triton::modes::ONLY_ON_TAINTED));
         xPyDict_SetItemString(modeDict, "PC_TRACKING_SYMBOLIC",           PyLong_FromUint32(triton::modes::PC_TRACKING_SYMBOLIC));
         xPyDict_SetItemString(modeDict, "SYMBOLIZE_INDEX_ROTATION",       PyLong_FromUint32(triton::modes::SYMBOLIZE_INDEX_ROTATION));
+        xPyDict_SetItemString(modeDict, "SYMBOLIZE_LOAD",                 PyLong_FromUint32(triton::modes::SYMBOLIZE_LOAD));
+        xPyDict_SetItemString(modeDict, "SYMBOLIZE_STORE",                PyLong_FromUint32(triton::modes::SYMBOLIZE_STORE));
         xPyDict_SetItemString(modeDict, "TAINT_THROUGH_POINTERS",         PyLong_FromUint32(triton::modes::TAINT_THROUGH_POINTERS));
       }
 

@@ -5,7 +5,6 @@
 **  This program is under the terms of the Apache License 2.0.
 */
 
-#include <utility>
 #include <triton/aarch64Semantics.hpp>
 #include <triton/aarch64Specifications.hpp>
 #include <triton/astContext.hpp>
@@ -21,6 +20,7 @@
 Mnemonic                      | Description
 ------------------------------|------------
 ADC                           | Add with Carry
+ADCS                          | Add with Carry, setting flags
 ADD (extended register)       | Add (extended register)
 ADD (immediate)               | Add (immediate)
 ADD (shifted register)        | Add (shifted register)
@@ -39,14 +39,28 @@ B                             | Branch
 BFI                           | Bit Field Insert
 BFXIL                         | Bitfield extract and insert at low end: an alias of BFM
 BIC                           | Bitwise Bit Clear
+BICS                          | Bitwise Bit Clear, setting flags
 BL                            | Branch with Link
 BLR                           | Branch with Link to Register
+BLRAA                         | Branch with Link to Register, with pointer authentication.
+BLRAAZ                        | Branch with Link to Register, with pointer authentication.
+BLRAB                         | Branch with Link to Register, with pointer authentication.
+BLRABZ                        | Branch with Link to Register, with pointer authentication.
 BR                            | Branch to Register
+BRAA                          | Branch to Register, with pointer authentication.
+BRAAZ                         | Branch to Register, with pointer authentication.
+BRAB                          | Branch to Register, with pointer authentication.
+BRABZ                         | Branch to Register, with pointer authentication.
+BRK                           | Breakpoint instruction
 CBNZ                          | Compare and Branch on Nonzero
 CBZ                           | Compare and Branch on Zero
+CCMN (immediate)              | Conditional Compare Negative (immediate)
+CCMN (register)               | Conditional Compare Negative (register)
 CCMP (immediate)              | Conditional Compare (immediate)
 CCMP (register)               | Conditional Compare (register)
 CINC                          | Conditional Increment: an alias of CSINC
+CINV                          | Conditional Invert: an alias of CSINV
+CLS                           | Count Leading Sign bits
 CLZ                           | Count Leading Zeros
 CMN (extended register)       | Compare Negative (extended register): an alias of ADDS (extended register)
 CMN (immediate)               | Compare Negative (immediate): an alias of ADDS (immediate)
@@ -54,21 +68,36 @@ CMN (shifted register)        | Compare Negative (shifted register): an alias of
 CMP (extended register)       | Compare (extended register): an alias of SUBS (extended register)
 CMP (immediate)               | Compare (immediate): an alias of SUBS (immediate)
 CMP (shifted register)        | Compare (shifted register): an alias of SUBS (shifted register)
+CNEG                          | Conditional Negate returns: an alias of CSNEG
 CSEL                          | Conditional Select
 CSET                          | Conditional Set: an alias of CSINC
 CSINC                         | Conditional Select Increment
+CSINV                         | Conditional Select Inversion
 CSNEG                         | Conditional Select Negation
+DMB                           | Data Memory Barrier
+DSB                           | Data Synchronization Barrier
 EON (shifted register)        | Bitwise Exclusive OR NOT (shifted register)
 EOR (immediate)               | Bitwise Exclusive OR (immediate)
 EOR (shifted register)        | Bitwise Exclusive OR (shifted register)
 EXTR                          | EXTR: Extract register
+FMOV                          | Floating-point Move register without conversion.
+ISB                           | Instruction Synchronization Barrier
+LD3 (multiple structure)      | Load multiple 3-element structures to three registers.
+LD3R                          | Load single 3-element structure and Replicate to all lanes of three registers.
+LD4 (multiple structure)      | Load multiple 4-element structures to four registers.
+LD4R                          | Load single 4-element structure and Replicate to all lanes of four registers.
 LDAR                          | Load-Acquire Register
 LDARB                         | Load-Acquire Register Byte
 LDARH                         | Load-Acquire Register Halfword
+LDAPR                         | Load-Acquire RCpc Register
+LDAPRB                        | Load-Acquire RCpc Register Byte
+LDAPRH                        | Load-Acquire RCpc Register Halfword
 LDAXR                         | Load-Acquire Exclusive Register
 LDAXRB                        | Load-Acquire Exclusive Register Byte
 LDAXRH                        | Load-Acquire Exclusive Register Halfword
+LDNP                          | Load Pair of Registers with non-temporal hint
 LDP                           | Load Pair of Registers
+LDPSW                         | Load Pair of Registers Signed Word
 LDR (immediate)               | Load Register (immediate)
 LDR (literal)                 | Load Register (literal)
 LDR (register)                | Load Register (register)
@@ -83,12 +112,25 @@ LDRSH (register)              | Load Register Signed Halfword (register)
 LDRSW (immediate)             | Load Register Signed Word (immediate)
 LDRSW (literal)               | Load Register Signed Word (literal)
 LDRSW (register)              | Load Register Signed Word (register)
+LDTR                          | Load Register (unprivileged)
+LDTRB                         | Load Register Byte (unprivileged)
+LDTRH                         | Load Register Halfword (unprivileged)
+LDTRSB                        | Load Register Signed Byte (unprivileged)
+LDTRSH                        | Load Register Signed Halfword (unprivileged)
+LDTRSW                        | Load Register Signed Word (unprivileged)
 LDUR                          | Load Register (unscaled)
 LDURB                         | Load Register Byte (unscaled)
 LDURH                         | Load Register Halfword (unscaled)
 LDURSB                        | Load Register Signed Byte (unscaled)
 LDURSH                        | Load Register Signed Halfword (unscaled)
 LDURSW                        | Load Register Signed Word (unscaled)
+LDAPUR                        | Load-Acquire RCpc Register (unscaled)
+LDAPURB                       | Load-Acquire RCpc Register Byte (unscaled)
+LDAPURH                       | Load-Acquire RCpc Register Halfword (unscaled)
+LDAPURSB                      | Load-Acquire RCpc Register Signed Byte (unscaled)
+LDAPURSH                      | Load-Acquire RCpc Register Signed Halfword (unscaled)
+LDAPURSW                      | Load-Acquire RCpc Register Signed Word (unscaled)
+LDXP                          | Load Exclusive Pair of Registers
 LDXR                          | Load Exclusive Register
 LDXRB                         | Load Exclusive Register Byte
 LDXRH                         | Load Exclusive Register Halfword
@@ -101,17 +143,27 @@ MNEG                          | Multiply-Negate: an alias of MSUB
 MOV (bitmask immediate)       | Move (bitmask immediate): an alias of ORR (immediate)
 MOV (register)                | Move (register): an alias of ORR (shifted register)
 MOV (to/from SP)              | Move between register and stack pointer: an alias of ADD (immediate)
+MOVI                          | Move Immediate (vector)
 MOVK                          | Move wide with keep
 MOVN                          | Move wide with NOT
 MOVZ                          | Move shifted 16-bit immediate to register
+MRS                           | Move System Register to general-purpose register
+MSR                           | Move general-purpose register to System Register
 MSUB                          | Multiply-Subtract
 MUL                           | Multiply: an alias of MADD
 MVN                           | Bitwise NOT: an alias of ORN (shifted register)
 NEG (shifted register)        | Negate (shifted register): an alias of SUB (shifted register)
+NEGS                          | Negate, setting flags: an alias of SUBS (shifted register)
+NGC                           | Negate with Carry: an alias of SBC
+NGCS                          | Negate with Carry, setting flags: an alias of SBCS
 NOP                           | No Operation
 ORN                           | Bitwise OR NOT (shifted register)
 ORR (immediate)               | Bitwise OR (immediate)
 ORR (shifted register)        | Bitwise OR (shifted register)
+PACIA                         | Pointer Authentication Code for Instruction address, using key A
+PACIB                         | Pointer Authentication Code for Instruction address, using key B
+PACIZA                        | Pointer Authentication Code for Instruction address, using key A and a zero diversifier
+PACIZB                        | Pointer Authentication Code for Instruction address, using key B and a zero diversifier
 RBIT                          | Reverse Bits
 RET                           | Return from subroutine
 REV                           | Reverse Bytes
@@ -121,15 +173,26 @@ REV64                         | Reverse Bytes: an alias of REV
 ROR (immediate)               | Rotate right (immediate): an alias of EXTR
 ROR (register)                | Rotate Right (register): an alias of RORV
 RORV                          | Rotate Right Variable
+SBC                           | Subtract with Carry
+SBCS                          | Subtract with Carry, setting flags
+SBFIZ                         | Signed Bitfield Insert in Zero: an alias of SBFM
 SBFX                          | Signed Bitfield Extract: an alias of SBFM
 SDIV                          | Signed Divide
 SMADDL                        | Signed Multiply-Add Long
+SMNEGL                        | Signed Multiply-Negate Long: an alias of SMSUBL
 SMSUBL                        | Signed Multiply-Subtract Long
 SMULH                         | Signed Multiply High
 SMULL                         | Signed Multiply Long: an alias of SMADDL
 STLR                          | Store-Release Register
 STLRB                         | Store-Release Register Byte
 STLRH                         | Store-Release Register Halfword
+STLUR                         | Store-Release Register (unscaled)
+STLURB                        | Store-Release Register Byte (unscaled)
+STLURH                        | Store-Release Register Halfword (unscaled)
+STLXR                         | Store-Release Exclusive Register
+STLXRB                        | Store-Release Exclusive Register Byte
+STLXRH                        | Store-Release Exclusive Register Halfword
+STNP                          | Store Pair of Registers with non-temporal hint
 STP                           | Store Pair of Registers
 STR (immediate)               | Store Register (immediate)
 STR (register)                | Store Register (register)
@@ -137,9 +200,16 @@ STRB (immediate)              | Store Register Byte (immediate)
 STRB (register)               | Store Register Byte (register)
 STRH (immediate)              | Store Register Halfword (immediate)
 STRH (register)               | Store Register Halfword (register)
+STTR                          | Store Register (unprivileged)
+STTRB                         | Store Register Byte (unprivileged)
+STTRH                         | Store Register Halfword (unprivileged)
 STUR                          | Store Register (unscaled)
 STURB                         | Store Register Byte (unscaled)
 STURH                         | Store Register Halfword (unscaled)
+STXP                          | Store Exclusive Pair or Registers
+STXR                          | Store Exclusive Register
+STXRB                         | Store Exclusive Register Byte
+STXRH                         | Store Exclusive Register Halfword
 SUB (extended register)       | Subtract (extended register)
 SUB (immediate)               | Subtract (immediate)
 SUB (shifted register)        | Subtract (shifted register)
@@ -150,6 +220,8 @@ SVC                           | Supervisor Call
 SXTB                          | Signed Extend Byte: an alias of SBFM
 SXTH                          | Sign Extend Halfword: an alias of SBFM
 SXTW                          | Sign Extend Word: an alias of SBFM
+TBNZ                          | Test bit and Branch if Nonzero
+TBZ                           | Test bit and Branch if Zero
 TST (immediate)               | Test bits (immediate): an alias of ANDS (immediate)
 TST (shifted register)        | Test (shifted register): an alias of ANDS (shifted register)
 UBFIZ                         | Unsigned Bitfield Insert in Zero: an alias of UBFM
@@ -157,11 +229,13 @@ UBFX                          | Unsigned Bitfield Extract: an alias of UBFM
 UDIV                          | Unsigned Divide
 UMADDL                        | Unsigned Multiply-Add Long
 UMNEGL                        | Unsigned Multiply-Negate Long: an alias of UMSUBL
+UMOV                          | Unsigned Move vector element to GPR
 UMSUBL                        | Unsigned Multiply-Subtract Long
 UMULH                         | Unsigned Multiply High
 UMULL                         | Unsigned Multiply Long: an alias of UMADDL
 UXTB                          | Unsigned Extend Byte: an alias of UBFM
 UXTH                          | Unsigned Extend Halfword: an alias of UBFM
+XTN                           | Extract Narrow
 
 */
 
@@ -174,10 +248,10 @@ namespace triton {
         AArch64Semantics::AArch64Semantics(triton::arch::Architecture* architecture,
                                            triton::engines::symbolic::SymbolicEngine* symbolicEngine,
                                            triton::engines::taint::TaintEngine* taintEngine,
-                                           const triton::ast::SharedAstContext& astCtxt) {
+                                           const triton::ast::SharedAstContext& astCtxt) : astCtxt(astCtxt) {
 
           this->architecture    = architecture;
-          this->astCtxt         = astCtxt;
+          this->exception       = triton::arch::NO_FAULT;
           this->symbolicEngine  = symbolicEngine;
           this->taintEngine     = taintEngine;
 
@@ -192,7 +266,8 @@ namespace triton {
         }
 
 
-        bool AArch64Semantics::buildSemantics(triton::arch::Instruction& inst) {
+        triton::arch::exception_e AArch64Semantics::buildSemantics(triton::arch::Instruction& inst) {
+          this->exception = triton::arch::NO_FAULT;
           switch (inst.getType()) {
             case ID_INS_ADC:       this->adc_s(inst);           break;
             case ID_INS_ADD:       this->add_s(inst);           break;
@@ -206,40 +281,81 @@ namespace triton {
             case ID_INS_BIC:       this->bic_s(inst);           break;
             case ID_INS_BL:        this->bl_s(inst);            break;
             case ID_INS_BLR:       this->blr_s(inst);           break;
+            case ID_INS_BLRAA:     this->blraa_s(inst);         break;
+            case ID_INS_BLRAAZ:    this->blraaz_s(inst);        break;
+            case ID_INS_BLRAB:     this->blrab_s(inst);         break;
+            case ID_INS_BLRABZ:    this->blrabz_s(inst);        break;
             case ID_INS_BR:        this->br_s(inst);            break;
+            case ID_INS_BRAA:      this->braa_s(inst);          break;
+            case ID_INS_BRAAZ:     this->braaz_s(inst);         break;
+            case ID_INS_BRAB:      this->brab_s(inst);          break;
+            case ID_INS_BRABZ:     this->brabz_s(inst);         break;
+            case ID_INS_BRK:       this->brk_s(inst);           break;
             case ID_INS_CBNZ:      this->cbnz_s(inst);          break;
             case ID_INS_CBZ:       this->cbz_s(inst);           break;
+            case ID_INS_CCMN:      this->ccmn_s(inst);          break;
             case ID_INS_CCMP:      this->ccmp_s(inst);          break;
             case ID_INS_CINC:      this->cinc_s(inst);          break;
+            case ID_INS_CINV:      this->cinv_s(inst);          break;
+            case ID_INS_CLS:       this->cls_s(inst);           break;
             case ID_INS_CLZ:       this->clz_s(inst);           break;
             case ID_INS_CMN:       this->cmn_s(inst);           break;
             case ID_INS_CMP:       this->cmp_s(inst);           break;
+            case ID_INS_CNEG:      this->cneg_s(inst);          break;
             case ID_INS_CSEL:      this->csel_s(inst);          break;
             case ID_INS_CSET:      this->cset_s(inst);          break;
+            case ID_INS_CSETM:     this->csetm_s(inst);         break;
             case ID_INS_CSINC:     this->csinc_s(inst);         break;
+            case ID_INS_CSINV:     this->csinv_s(inst);         break;
             case ID_INS_CSNEG:     this->csneg_s(inst);         break;
+            case ID_INS_DMB:       this->dmb_s(inst);           break;
+            case ID_INS_DSB:       this->dsb_s(inst);           break;
             case ID_INS_EON:       this->eon_s(inst);           break;
             case ID_INS_EOR:       this->eor_s(inst);           break;
             case ID_INS_EXTR:      this->extr_s(inst);          break;
+            case ID_INS_FMOV:      this->fmov_s(inst);          break;
+            case ID_INS_ISB:       this->isb_s(inst);           break;
+            case ID_INS_LD3:       this->ld3_s(inst);           break;
+            case ID_INS_LD3R:      this->ld3r_s(inst);          break;
+            case ID_INS_LD4:       this->ld4_s(inst);           break;
+            case ID_INS_LD4R:      this->ld4r_s(inst);          break;
             case ID_INS_LDAR:      this->ldar_s(inst);          break;
             case ID_INS_LDARB:     this->ldarb_s(inst);         break;
             case ID_INS_LDARH:     this->ldarh_s(inst);         break;
+            case ID_INS_LDAPR:     this->ldapr_s(inst);         break;
+            case ID_INS_LDAPRB:    this->ldaprb_s(inst);        break;
+            case ID_INS_LDAPRH:    this->ldaprh_s(inst);        break;
             case ID_INS_LDAXR:     this->ldaxr_s(inst);         break;
             case ID_INS_LDAXRB:    this->ldaxrb_s(inst);        break;
             case ID_INS_LDAXRH:    this->ldaxrh_s(inst);        break;
+            case ID_INS_LDNP:      this->ldnp_s(inst);          break;
             case ID_INS_LDP:       this->ldp_s(inst);           break;
+            case ID_INS_LDPSW:     this->ldpsw_s(inst);         break;
             case ID_INS_LDR:       this->ldr_s(inst);           break;
             case ID_INS_LDRB:      this->ldrb_s(inst);          break;
             case ID_INS_LDRH:      this->ldrh_s(inst);          break;
             case ID_INS_LDRSB:     this->ldrsb_s(inst);         break;
             case ID_INS_LDRSH:     this->ldrsh_s(inst);         break;
             case ID_INS_LDRSW:     this->ldrsw_s(inst);         break;
+            case ID_INS_LDTR:      this->ldtr_s(inst);          break;
+            case ID_INS_LDTRB:     this->ldtrb_s(inst);         break;
+            case ID_INS_LDTRH:     this->ldtrh_s(inst);         break;
+            case ID_INS_LDTRSB:    this->ldtrsb_s(inst);        break;
+            case ID_INS_LDTRSH:    this->ldtrsh_s(inst);        break;
+            case ID_INS_LDTRSW:    this->ldtrsw_s(inst);        break;
             case ID_INS_LDUR:      this->ldur_s(inst);          break;
             case ID_INS_LDURB:     this->ldurb_s(inst);         break;
             case ID_INS_LDURH:     this->ldurh_s(inst);         break;
             case ID_INS_LDURSB:    this->ldursb_s(inst);        break;
             case ID_INS_LDURSH:    this->ldursh_s(inst);        break;
             case ID_INS_LDURSW:    this->ldursw_s(inst);        break;
+            case ID_INS_LDAPUR:    this->ldapur_s(inst);        break;
+            case ID_INS_LDAPURB:   this->ldapurb_s(inst);       break;
+            case ID_INS_LDAPURH:   this->ldapurh_s(inst);       break;
+            case ID_INS_LDAPURSB:  this->ldapursb_s(inst);      break;
+            case ID_INS_LDAPURSH:  this->ldapursh_s(inst);      break;
+            case ID_INS_LDAPURSW:  this->ldapursw_s(inst);      break;
+            case ID_INS_LDXP:      this->ldxp_s(inst);          break;
             case ID_INS_LDXR:      this->ldxr_s(inst);          break;
             case ID_INS_LDXRB:     this->ldxrb_s(inst);         break;
             case ID_INS_LDXRH:     this->ldxrh_s(inst);         break;
@@ -248,16 +364,26 @@ namespace triton {
             case ID_INS_MADD:      this->madd_s(inst);          break;
             case ID_INS_MNEG:      this->mneg_s(inst);          break;
             case ID_INS_MOV:       this->mov_s(inst);           break;
+            case ID_INS_MOVI:      this->movi_s(inst);          break;
             case ID_INS_MOVK:      this->movk_s(inst);          break;
             case ID_INS_MOVN:      this->movn_s(inst);          break;
             case ID_INS_MOVZ:      this->movz_s(inst);          break;
+            case ID_INS_MRS:       this->mrs_s(inst);           break;
+            case ID_INS_MSR:       this->msr_s(inst);           break;
             case ID_INS_MSUB:      this->msub_s(inst);          break;
             case ID_INS_MUL:       this->mul_s(inst);           break;
             case ID_INS_MVN:       this->mvn_s(inst);           break;
             case ID_INS_NEG:       this->neg_s(inst);           break;
+            case ID_INS_NEGS:      this->neg_s(inst);           break;
+            case ID_INS_NGC:       this->ngc_s(inst);           break;
+            case ID_INS_NGCS:      this->ngc_s(inst);           break;
             case ID_INS_NOP:       this->nop_s(inst);           break;
             case ID_INS_ORN:       this->orn_s(inst);           break;
             case ID_INS_ORR:       this->orr_s(inst);           break;
+            case ID_INS_PACIA:     this->pacia_s(inst);         break;
+            case ID_INS_PACIB:     this->pacib_s(inst);         break;
+            case ID_INS_PACIZA:    this->paciza_s(inst);        break;
+            case ID_INS_PACIZB:    this->pacizb_s(inst);        break;
             case ID_INS_RBIT:      this->rbit_s(inst);          break;
             case ID_INS_RET:       this->ret_s(inst);           break;
             case ID_INS_REV16:     this->rev16_s(inst);         break;
@@ -265,22 +391,39 @@ namespace triton {
             case ID_INS_REV64:     this->rev_s(inst);           break;
             case ID_INS_REV:       this->rev_s(inst);           break;
             case ID_INS_ROR:       this->ror_s(inst);           break;
+            case ID_INS_SBC:       this->sbc_s(inst);           break;
+            case ID_INS_SBFIZ:     this->sbfiz_s(inst);         break;
             case ID_INS_SBFX:      this->sbfx_s(inst);          break;
             case ID_INS_SDIV:      this->sdiv_s(inst);          break;
             case ID_INS_SMADDL:    this->smaddl_s(inst);        break;
+            case ID_INS_SMNEGL:    this->smnegl_s(inst);        break;
             case ID_INS_SMSUBL:    this->smsubl_s(inst);        break;
             case ID_INS_SMULH:     this->smulh_s(inst);         break;
             case ID_INS_SMULL:     this->smull_s(inst);         break;
             case ID_INS_STLR:      this->stlr_s(inst);          break;
             case ID_INS_STLRB:     this->stlrb_s(inst);         break;
             case ID_INS_STLRH:     this->stlrh_s(inst);         break;
+            case ID_INS_STLUR:     this->stlur_s(inst);         break;
+            case ID_INS_STLURB:    this->stlurb_s(inst);        break;
+            case ID_INS_STLURH:    this->stlurh_s(inst);        break;
+            case ID_INS_STLXR:     this->stlxr_s(inst);         break;
+            case ID_INS_STLXRB:    this->stlxrb_s(inst);        break;
+            case ID_INS_STLXRH:    this->stlxrh_s(inst);        break;
+            case ID_INS_STNP:      this->stnp_s(inst);          break;
             case ID_INS_STP:       this->stp_s(inst);           break;
             case ID_INS_STR:       this->str_s(inst);           break;
             case ID_INS_STRB:      this->strb_s(inst);          break;
             case ID_INS_STRH:      this->strh_s(inst);          break;
+            case ID_INS_STTR:      this->sttr_s(inst);          break;
+            case ID_INS_STTRB:     this->sttrb_s(inst);         break;
+            case ID_INS_STTRH:     this->sttrh_s(inst);         break;
             case ID_INS_STUR:      this->stur_s(inst);          break;
             case ID_INS_STURB:     this->sturb_s(inst);         break;
             case ID_INS_STURH:     this->sturh_s(inst);         break;
+            case ID_INS_STXP:      this->stxp_s(inst);          break;
+            case ID_INS_STXR:      this->stxr_s(inst);          break;
+            case ID_INS_STXRB:     this->stxrb_s(inst);         break;
+            case ID_INS_STXRH:     this->stxrh_s(inst);         break;
             case ID_INS_SUB:       this->sub_s(inst);           break;
             case ID_INS_SVC:       this->svc_s(inst);           break;
             case ID_INS_SXTB:      this->sxtb_s(inst);          break;
@@ -293,16 +436,19 @@ namespace triton {
             case ID_INS_UBFX:      this->ubfx_s(inst);          break;
             case ID_INS_UDIV:      this->udiv_s(inst);          break;
             case ID_INS_UMADDL:    this->umaddl_s(inst);        break;
+            case ID_INS_UMOV:      this->umov_s(inst);          break;
             case ID_INS_UMNEGL:    this->umnegl_s(inst);        break;
             case ID_INS_UMSUBL:    this->umsubl_s(inst);        break;
             case ID_INS_UMULH:     this->umulh_s(inst);         break;
             case ID_INS_UMULL:     this->umull_s(inst);         break;
             case ID_INS_UXTB:      this->uxtb_s(inst);          break;
             case ID_INS_UXTH:      this->uxth_s(inst);          break;
+            case ID_INS_XTN:       this->xtn_s(inst);           break;
             default:
-              return false;
+              this->exception = triton::arch::FAULT_UD;
+              break;
           }
-          return true;
+          return this->exception;
         }
 
 
@@ -618,7 +764,8 @@ namespace triton {
         void AArch64Semantics::nfCcmp_s(triton::arch::Instruction& inst,
                                         const triton::engines::symbolic::SharedSymbolicExpression& parent,
                                         triton::arch::OperandWrapper& dst,
-                                        triton::ast::SharedAbstractNode& nzcv) {
+                                        triton::ast::SharedAbstractNode& nzcv,
+                                        triton::ast::SharedAbstractNode& cond) {
 
           auto nf   = this->architecture->getRegister(ID_REG_AARCH64_N);
           auto high = dst.getHigh();
@@ -629,7 +776,7 @@ namespace triton {
            */
           auto node1 = this->astCtxt->extract(high, high, this->astCtxt->reference(parent));
           auto node2 = this->astCtxt->extract(3, 3, nzcv);
-          auto node3 = this->getCodeConditionAst(inst, node1, node2);
+          auto node3 = this->astCtxt->ite(this->astCtxt->equal(cond, this->astCtxt->bvtrue()), node1, node2);
 
           /* Create the symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node3, nf, "Negative flag");
@@ -672,7 +819,8 @@ namespace triton {
         void AArch64Semantics::zfCcmp_s(triton::arch::Instruction& inst,
                                         const triton::engines::symbolic::SharedSymbolicExpression& parent,
                                         triton::arch::OperandWrapper& dst,
-                                        triton::ast::SharedAbstractNode& nzcv) {
+                                        triton::ast::SharedAbstractNode& nzcv,
+                                        triton::ast::SharedAbstractNode& cond) {
 
           auto zf     = this->architecture->getRegister(ID_REG_AARCH64_Z);
           auto bvSize = dst.getBitSize();
@@ -692,7 +840,7 @@ namespace triton {
                          this->astCtxt->bv(0, 1)
                        );
           auto node2 = this->astCtxt->extract(2, 2, nzcv);
-          auto node3 = this->getCodeConditionAst(inst, node1, node2);
+          auto node3 = this->astCtxt->ite(this->astCtxt->equal(cond, this->astCtxt->bvtrue()), node1, node2);
 
           /* Create the symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node3, zf, "Zero flag");
@@ -773,12 +921,55 @@ namespace triton {
         }
 
 
+        void AArch64Semantics::cfCcmn_s(triton::arch::Instruction& inst,
+                                        const triton::engines::symbolic::SharedSymbolicExpression& parent,
+                                        triton::arch::OperandWrapper& dst,
+                                        triton::ast::SharedAbstractNode& op1,
+                                        triton::ast::SharedAbstractNode& op2,
+                                        triton::ast::SharedAbstractNode& nzcv,
+                                        triton::ast::SharedAbstractNode& cond) {
+
+          auto cf     = this->architecture->getRegister(ID_REG_AARCH64_C);
+          auto bvSize = dst.getBitSize();
+          auto low    = dst.getLow();
+          auto high   = dst.getHigh();
+
+          /*
+           * Create the semantic.
+           * if cond == true:
+           *   cf = MSB((op1 & op2) ^ ((op1 ^ op2 ^ result) & (op1 ^ op2)))
+           * else
+           *   cf = CF(nzcv)
+           */
+          auto node1 = this->astCtxt->extract(bvSize-1, bvSize-1,
+                         this->astCtxt->bvxor(
+                           this->astCtxt->bvand(op1, op2),
+                           this->astCtxt->bvand(
+                             this->astCtxt->bvxor(
+                               this->astCtxt->bvxor(op1, op2),
+                               this->astCtxt->extract(high, low, this->astCtxt->reference(parent))
+                             ),
+                           this->astCtxt->bvxor(op1, op2))
+                         )
+                       );
+          auto node2 = this->astCtxt->extract(1, 1, nzcv);
+          auto node3 = this->astCtxt->ite(this->astCtxt->equal(cond, this->astCtxt->bvtrue()), node1, node2);
+
+          /* Create the symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node3, cf, "Carry flag");
+
+          /* Spread the taint from the parent to the child */
+          expr->isTainted = this->taintEngine->setTaintRegister(cf, parent->isTainted);
+        }
+
+
         void AArch64Semantics::cfCcmp_s(triton::arch::Instruction& inst,
                                         const triton::engines::symbolic::SharedSymbolicExpression& parent,
                                         triton::arch::OperandWrapper& dst,
                                         triton::ast::SharedAbstractNode& op1,
                                         triton::ast::SharedAbstractNode& op2,
-                                        triton::ast::SharedAbstractNode& nzcv) {
+                                        triton::ast::SharedAbstractNode& nzcv,
+                                        triton::ast::SharedAbstractNode& cond) {
 
           auto cf     = this->architecture->getRegister(ID_REG_AARCH64_C);
           auto bvSize = dst.getBitSize();
@@ -805,7 +996,7 @@ namespace triton {
                          this->astCtxt->bvtrue()
                        );
           auto node2 = this->astCtxt->extract(1, 1, nzcv);
-          auto node3 = this->getCodeConditionAst(inst, node1, node2);
+          auto node3 = this->astCtxt->ite(this->astCtxt->equal(cond, this->astCtxt->bvtrue()), node1, node2);
 
           /* Create the symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node3, cf, "Carry flag");
@@ -875,12 +1066,50 @@ namespace triton {
         }
 
 
+        void AArch64Semantics::vfCcmn_s(triton::arch::Instruction& inst,
+                                        const triton::engines::symbolic::SharedSymbolicExpression& parent,
+                                        triton::arch::OperandWrapper& dst,
+                                        triton::ast::SharedAbstractNode& op1,
+                                        triton::ast::SharedAbstractNode& op2,
+                                        triton::ast::SharedAbstractNode& nzcv,
+                                        triton::ast::SharedAbstractNode& cond) {
+
+          auto vf     = this->architecture->getRegister(ID_REG_AARCH64_V);
+          auto bvSize = dst.getBitSize();
+          auto low    = dst.getLow();
+          auto high   = dst.getHigh();
+
+          /*
+           * Create the semantic.
+           * if cond == true:
+           *   vf = MSB((op1 ^ ~op2) & (op1 ^ result))
+           * else:
+           *   vf = VF(nzcv)
+           */
+          auto node1 = this->astCtxt->extract(bvSize-1, bvSize-1,
+                         this->astCtxt->bvand(
+                           this->astCtxt->bvxor(op1, this->astCtxt->bvnot(op2)),
+                           this->astCtxt->bvxor(op1, this->astCtxt->extract(high, low, this->astCtxt->reference(parent)))
+                         )
+                       );
+          auto node2 = this->astCtxt->extract(0, 0, nzcv);
+          auto node3 = this->astCtxt->ite(this->astCtxt->equal(cond, this->astCtxt->bvtrue()), node1, node2);
+
+          /* Create the symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node3, vf, "Overflow flag");
+
+          /* Spread the taint from the parent to the child */
+          expr->isTainted = this->taintEngine->setTaintRegister(vf, parent->isTainted);
+        }
+
+
         void AArch64Semantics::vfCcmp_s(triton::arch::Instruction& inst,
                                         const triton::engines::symbolic::SharedSymbolicExpression& parent,
                                         triton::arch::OperandWrapper& dst,
                                         triton::ast::SharedAbstractNode& op1,
                                         triton::ast::SharedAbstractNode& op2,
-                                        triton::ast::SharedAbstractNode& nzcv) {
+                                        triton::ast::SharedAbstractNode& nzcv,
+                                        triton::ast::SharedAbstractNode& cond) {
 
           auto vf     = this->architecture->getRegister(ID_REG_AARCH64_V);
           auto bvSize = dst.getBitSize();
@@ -901,7 +1130,7 @@ namespace triton {
                          )
                        );
           auto node2 = this->astCtxt->extract(0, 0, nzcv);
-          auto node3 = this->getCodeConditionAst(inst, node1, node2);
+          auto node3 = this->astCtxt->ite(this->astCtxt->equal(cond, this->astCtxt->bvtrue()), node1, node2);
 
           /* Create the symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node3, vf, "Overflow flag");
@@ -926,10 +1155,18 @@ namespace triton {
           auto node = this->astCtxt->bvadd(this->astCtxt->bvadd(op1, op2), this->astCtxt->zx(dst.getBitSize()-1, op3));
 
           /* Create symbolic expression */
-          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "ADC operation");
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "ADC(S) operation");
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->setTaint(dst, this->taintEngine->isTainted(src1) | this->taintEngine->isTainted(src2) | this->taintEngine->isTainted(cf));
+
+          /* Update symbolic flags */
+          if (inst.isUpdateFlag() == true) {
+            this->cfAdd_s(inst, expr, dst, op1, op2);
+            this->nf_s(inst, expr, dst);
+            this->vfAdd_s(inst, expr, dst, op1, op2);
+            this->zf_s(inst, expr, dst);
+          }
 
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
@@ -1025,6 +1262,11 @@ namespace triton {
           /* Create the semantics */
           auto node = this->astCtxt->bvand(op1, op2);
 
+          /* Special case for vector registers */
+          if (dst.getConstRegister().getVASSize() == triton::size::qword) {
+            node = this->astCtxt->extract(63, 0, node);
+          }
+
           /* Create symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "AND(S) operation");
 
@@ -1048,10 +1290,14 @@ namespace triton {
           auto& dst  = inst.operands[0];
           auto& src1 = inst.operands[1];
           auto& src2 = inst.operands[2];
+          auto  size = src2.getBitSize();
 
           /* Create symbolic operands */
           auto op1 = this->symbolicEngine->getOperandAst(inst, src1);
-          auto op2 = this->symbolicEngine->getOperandAst(inst, src2);
+          auto op2 = this->astCtxt->bvand(
+                       this->symbolicEngine->getOperandAst(inst, src2),
+                       this->astCtxt->bv(size - 1,  size)
+                     );
 
           /* Create the semantics */
           auto node = this->astCtxt->bvashr(op1, op2);
@@ -1149,10 +1395,11 @@ namespace triton {
           auto opSrc = this->symbolicEngine->getOperandAst(inst, src1);
           auto opDst = this->symbolicEngine->getOperandAst(inst, dst);
 
-          auto node = this->astCtxt->concat(
-            this->astCtxt->extract(dst.getBitSize() - 1, width, opDst),
-            this->astCtxt->extract(lsb + width - 1, lsb, opSrc)
-          );
+          /* With lsb 0 and the full register width (bfxil x0, x1, #0, #64) no bit of dst is kept */
+          auto node = this->astCtxt->extract(lsb + width - 1, lsb, opSrc);
+          if (width < dst.getBitSize()) {
+            node = this->astCtxt->concat(this->astCtxt->extract(dst.getBitSize() - 1, width, opDst), node);
+          }
 
           /* Create symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "BFXIL operation");
@@ -1178,14 +1425,23 @@ namespace triton {
           auto node = this->astCtxt->bvand(op1, this->astCtxt->bvnot(op2));
 
           /* Create symbolic expression */
-          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "BIC operation");
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "BIC(S) operation");
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->setTaint(dst, this->taintEngine->isTainted(src1) | this->taintEngine->isTainted(src2));
 
+          /* Update symbolic flags */
+          if (inst.isUpdateFlag() == true) {
+            this->clearFlag_s(inst, this->architecture->getRegister(ID_REG_AARCH64_C), "Clears carry flag");
+            this->nf_s(inst, expr, src1);
+            this->clearFlag_s(inst, this->architecture->getRegister(ID_REG_AARCH64_V), "Clears overflow flag");
+            this->zf_s(inst, expr, src1);
+          }
+
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
         }
+
 
 
         void AArch64Semantics::bl_s(triton::arch::Instruction& inst) {
@@ -1238,6 +1494,106 @@ namespace triton {
         }
 
 
+        void AArch64Semantics::blraa_s(triton::arch::Instruction& inst) {
+          auto  dst1 = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_X30));
+          auto  dst2 = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_PC));
+          auto& src  = inst.operands[0];
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->bv(inst.getNextAddress(), dst1.getBitSize());
+          auto node2 = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "BLRAA operation - Link Register");
+          auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "BLRAA operation - Program Counter");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->taintAssignment(dst1, src);
+          expr2->isTainted = this->taintEngine->taintAssignment(dst2, src);
+
+          /* Set condition flag */
+          inst.setConditionTaken(true);
+
+          /* Create the path constraint */
+          this->symbolicEngine->pushPathConstraint(inst, expr2);
+        }
+
+
+        void AArch64Semantics::blraaz_s(triton::arch::Instruction& inst) {
+          auto  dst1 = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_X30));
+          auto  dst2 = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_PC));
+          auto& src  = inst.operands[0];
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->bv(inst.getNextAddress(), dst1.getBitSize());
+          auto node2 = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "BLRAAZ operation - Link Register");
+          auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "BLRAAZ operation - Program Counter");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->taintAssignment(dst1, src);
+          expr2->isTainted = this->taintEngine->taintAssignment(dst2, src);
+
+          /* Set condition flag */
+          inst.setConditionTaken(true);
+
+          /* Create the path constraint */
+          this->symbolicEngine->pushPathConstraint(inst, expr2);
+        }
+
+
+        void AArch64Semantics::blrab_s(triton::arch::Instruction& inst) {
+          auto  dst1 = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_X30));
+          auto  dst2 = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_PC));
+          auto& src  = inst.operands[0];
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->bv(inst.getNextAddress(), dst1.getBitSize());
+          auto node2 = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "BLRAB operation - Link Register");
+          auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "BLRAB operation - Program Counter");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->taintAssignment(dst1, src);
+          expr2->isTainted = this->taintEngine->taintAssignment(dst2, src);
+
+          /* Set condition flag */
+          inst.setConditionTaken(true);
+
+          /* Create the path constraint */
+          this->symbolicEngine->pushPathConstraint(inst, expr2);
+        }
+
+
+        void AArch64Semantics::blrabz_s(triton::arch::Instruction& inst) {
+          auto  dst1 = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_X30));
+          auto  dst2 = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_PC));
+          auto& src  = inst.operands[0];
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->bv(inst.getNextAddress(), dst1.getBitSize());
+          auto node2 = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "BLRABZ operation - Link Register");
+          auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "BLRABZ operation - Program Counter");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->taintAssignment(dst1, src);
+          expr2->isTainted = this->taintEngine->taintAssignment(dst2, src);
+
+          /* Set condition flag */
+          inst.setConditionTaken(true);
+
+          /* Create the path constraint */
+          this->symbolicEngine->pushPathConstraint(inst, expr2);
+        }
+
+
         void AArch64Semantics::br_s(triton::arch::Instruction& inst) {
           auto  dst = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_PC));
           auto& src = inst.operands[0];
@@ -1256,6 +1612,99 @@ namespace triton {
 
           /* Create the path constraint */
           this->symbolicEngine->pushPathConstraint(inst, expr);
+        }
+
+
+        void AArch64Semantics::braa_s(triton::arch::Instruction& inst) {
+          auto  dst = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_PC));
+          auto& src = inst.operands[0];
+
+          /* Create the semantics */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "BRAA operation - Program Counter");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Set condition flag */
+          inst.setConditionTaken(true);
+
+          /* Create the path constraint */
+          this->symbolicEngine->pushPathConstraint(inst, expr);
+        }
+
+
+        void AArch64Semantics::braaz_s(triton::arch::Instruction& inst) {
+          auto  dst = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_PC));
+          auto& src = inst.operands[0];
+
+          /* Create the semantics */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "BRAAZ operation - Program Counter");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Set condition flag */
+          inst.setConditionTaken(true);
+
+          /* Create the path constraint */
+          this->symbolicEngine->pushPathConstraint(inst, expr);
+        }
+
+
+        void AArch64Semantics::brab_s(triton::arch::Instruction& inst) {
+          auto  dst = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_PC));
+          auto& src = inst.operands[0];
+
+          /* Create the semantics */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "BRAB operation - Program Counter");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Set condition flag */
+          inst.setConditionTaken(true);
+
+          /* Create the path constraint */
+          this->symbolicEngine->pushPathConstraint(inst, expr);
+        }
+
+
+        void AArch64Semantics::brabz_s(triton::arch::Instruction& inst) {
+          auto  dst = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_PC));
+          auto& src = inst.operands[0];
+
+          /* Create the semantics */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "BRABZ operation - Program Counter");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Set condition flag */
+          inst.setConditionTaken(true);
+
+          /* Create the path constraint */
+          this->symbolicEngine->pushPathConstraint(inst, expr);
+        }
+
+
+        void AArch64Semantics::brk_s(triton::arch::Instruction& inst) {
+          /* Set the exception */
+          this->exception = triton::arch::FAULT_BP;
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
         }
 
 
@@ -1321,6 +1770,41 @@ namespace triton {
         }
 
 
+        void AArch64Semantics::ccmn_s(triton::arch::Instruction& inst) {
+          auto& src1  = inst.operands[0];
+          auto& src2  = inst.operands[1];
+          auto& src3  = inst.operands[2];
+
+          /* Create symbolic operands */
+          auto op1 = this->symbolicEngine->getOperandAst(inst, src1);
+          auto op2 = this->symbolicEngine->getOperandAst(inst, src2);
+          auto op3 = this->symbolicEngine->getOperandAst(inst, src3);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->bvadd(op1, op2);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicVolatileExpression(inst, node, "CCMN temporary operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->isTainted(src1) | this->taintEngine->isTainted(src2);
+
+          /* Evaluate the condition on the incoming flags, as for CCMP */
+          auto bvtrue  = this->astCtxt->bvtrue();
+          auto bvfalse = this->astCtxt->bvfalse();
+          auto cond    = this->getCodeConditionAst(inst, bvtrue, bvfalse);
+
+          /* Update symbolic flags */
+          this->cfCcmn_s(inst, expr, src1, op1, op2, op3, cond);
+          this->nfCcmp_s(inst, expr, src1, op3, cond);
+          this->vfCcmn_s(inst, expr, src1, op1, op2, op3, cond);
+          this->zfCcmp_s(inst, expr, src1, op3, cond);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
         void AArch64Semantics::ccmp_s(triton::arch::Instruction& inst) {
           auto& src1  = inst.operands[0];
           auto& src2  = inst.operands[1];
@@ -1340,11 +1824,20 @@ namespace triton {
           /* Spread taint */
           expr->isTainted = this->taintEngine->isTainted(src1) | this->taintEngine->isTainted(src2);
 
+          /*
+           * Evaluate the condition on the incoming flags: each flag below is
+           * updated in turn, so evaluating it per flag would read the flags
+           * already written by this instruction.
+           */
+          auto bvtrue  = this->astCtxt->bvtrue();
+          auto bvfalse = this->astCtxt->bvfalse();
+          auto cond    = this->getCodeConditionAst(inst, bvtrue, bvfalse);
+
           /* Update symbolic flags */
-          this->cfCcmp_s(inst, expr, src1, op1, op2, op3);
-          this->nfCcmp_s(inst, expr, src1, op3);
-          this->vfCcmp_s(inst, expr, src1, op1, op2, op3);
-          this->zfCcmp_s(inst, expr, src1, op3);
+          this->cfCcmp_s(inst, expr, src1, op1, op2, op3, cond);
+          this->nfCcmp_s(inst, expr, src1, op3, cond);
+          this->vfCcmp_s(inst, expr, src1, op1, op2, op3, cond);
+          this->zfCcmp_s(inst, expr, src1, op3, cond);
 
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
@@ -1367,6 +1860,58 @@ namespace triton {
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->setTaint(dst, this->getCodeConditionTainteSate(inst));
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::cinv_s(triton::arch::Instruction& inst) {
+          auto& dst = inst.operands[0];
+          auto& src = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op1 = this->symbolicEngine->getOperandAst(inst, src);
+          auto op2 = this->astCtxt->bvnot(op1);
+
+          /* Create the semantics */
+          auto node = this->getCodeConditionAst(inst, op2, op1);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "CINV operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintUnion(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::cls_s(triton::arch::Instruction& inst) {
+          auto& dst    = inst.operands[0];
+          auto& src    = inst.operands[1];
+          auto  bvSize = dst.getBitSize();
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics: CountLeadingZeroBits(op<N-1:1> EOR op<N-2:0>) */
+          auto diff = this->astCtxt->bvxor(this->astCtxt->extract(bvSize-1, 1, op), this->astCtxt->extract(bvSize-2, 0, op));
+          auto node = this->astCtxt->bv(bvSize-1, bvSize);
+          for (triton::uint32 index = 0; index < bvSize-1; index++) {
+            node = this->astCtxt->ite(
+                     this->astCtxt->equal(this->astCtxt->extract(index, index, diff), this->astCtxt->bvtrue()),
+                     this->astCtxt->bv(bvSize-2-index, bvSize),
+                     node
+                   );
+          }
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "CLS operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
 
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
@@ -1561,6 +2106,28 @@ namespace triton {
         }
 
 
+        void AArch64Semantics::cneg_s(triton::arch::Instruction& inst) {
+          auto& dst = inst.operands[0];
+          auto& src = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op1 = this->astCtxt->bvneg(this->symbolicEngine->getOperandAst(inst, src));
+          auto op2 = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->getCodeConditionAst(inst, op1, op2);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "CNEG operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintUnion(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
         void AArch64Semantics::csel_s(triton::arch::Instruction& inst) {
           auto& dst  = inst.operands[0];
           auto& src1 = inst.operands[1];
@@ -1596,6 +2163,28 @@ namespace triton {
 
           /* Create symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "CSET operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->setTaint(dst, this->getCodeConditionTainteSate(inst));
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::csetm_s(triton::arch::Instruction& inst) {
+          auto& dst = inst.operands[0];
+
+          /* Create symbolic operands */
+          triton::uint512 temp = 1;
+          auto op1 = this->astCtxt->bv((temp << dst.getBitSize()) - 1, dst.getBitSize());
+          auto op2 = this->astCtxt->bv(0, dst.getBitSize());
+
+          /* Create the semantics */
+          auto node = this->getCodeConditionAst(inst, op1, op2);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "CSETM operation");
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->setTaint(dst, this->getCodeConditionTainteSate(inst));
@@ -1653,6 +2242,40 @@ namespace triton {
           this->controlFlow_s(inst);
         }
 
+        void AArch64Semantics::csinv_s(triton::arch::Instruction& inst) {
+          auto& dst  = inst.operands[0];
+          auto& src1 = inst.operands[1];
+          auto& src2 = inst.operands[2];
+
+          /* Create symbolic operands */
+          auto op1 = this->symbolicEngine->getOperandAst(inst, src1);
+          auto op2 = this->astCtxt->bvnot(this->symbolicEngine->getOperandAst(inst, src2));
+
+          /* Create the semantics */
+          auto node = this->getCodeConditionAst(inst, op1, op2);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "CSINV operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->setTaint(dst, this->taintEngine->isTainted(src1) | this->taintEngine->isTainted(src2));
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::dmb_s(triton::arch::Instruction& inst) {
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::dsb_s(triton::arch::Instruction& inst) {
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
 
         void AArch64Semantics::eon_s(triton::arch::Instruction& inst) {
           auto& dst  = inst.operands[0];
@@ -1689,6 +2312,11 @@ namespace triton {
           /* Create the semantics */
           auto node = this->astCtxt->bvxor(op1, op2);
 
+          /* Special case for vector registers */
+          if (dst.getConstRegister().getVASSize() == triton::size::qword) {
+            node = this->astCtxt->extract(63, 0, node);
+          }
+
           /* Create symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "EOR operation");
 
@@ -1724,6 +2352,1020 @@ namespace triton {
           this->controlFlow_s(inst);
         }
 
+        void AArch64Semantics::fmov_s(triton::arch::Instruction& inst) {
+          auto& dst  = inst.operands[0];
+          auto& src = inst.operands[1];
+          
+          /* Create the semantics */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "FMOV operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::isb_s(triton::arch::Instruction& inst) {
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ld3_s(triton::arch::Instruction& inst) {
+          std::list<triton::ast::SharedAbstractNode> vec0;
+          std::list<triton::ast::SharedAbstractNode> vec1;
+          std::list<triton::ast::SharedAbstractNode> vec2;
+
+          triton::arch::OperandWrapper& vt0 = inst.operands[0]; /* vas register */
+          triton::arch::OperandWrapper& vt1 = inst.operands[1]; /* vas register */
+          triton::arch::OperandWrapper& vt2 = inst.operands[2]; /* vas register */
+          triton::arch::OperandWrapper& src = inst.operands[3]; /* memory */
+
+          bool vt0_t = false; /* taint state of vt0 */
+          bool vt1_t = false; /* taint state of vt1 */
+          bool vt2_t = false; /* taint state of vt2 */
+
+          /*
+           * Is the post-index immediate offset, encoded in Q:
+           * 0 #24
+           * 1 #48
+           */
+          triton::uint32 postIndex = 0;
+
+          auto mem   = src.getConstMemory();
+          auto vas_e = vt0.getConstRegister().getVASType();
+
+          switch (vas_e) {
+            /* LD3 multiple structure */
+            case triton::arch::arm::ID_VAS_16B: {
+              for (triton::uint32 i = 0; i != 16; i++) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 0, triton::size::byte);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 1, triton::size::byte);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 2, triton::size::byte);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+              postIndex = 48;
+              break;
+            }
+
+            /* LD3 multiple structure */
+            case triton::arch::arm::ID_VAS_8B: {
+              for (triton::uint32 i = 0; i != 8; i++) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 0, triton::size::byte);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 1, triton::size::byte);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 2, triton::size::byte);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+              postIndex = 24;
+              break;
+            }
+
+            /* LD3 multiple structure */
+            case triton::arch::arm::ID_VAS_8H: {
+              for (triton::uint32 i = 0; i != 16; i += 2) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 0, triton::size::word);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 2, triton::size::word);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 4, triton::size::word);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+              postIndex = 48;
+              break;
+            }
+
+            /* LD3 multiple structure */
+            case triton::arch::arm::ID_VAS_4H: {
+              for (triton::uint32 i = 0; i != 8; i += 2) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 0, triton::size::word);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 2, triton::size::word);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 4, triton::size::word);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+              postIndex = 24;
+              break;
+            }
+
+            /* LD3 multiple structure */
+            case triton::arch::arm::ID_VAS_4S: {
+              for (triton::uint32 i = 0; i != 16; i += 4) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 0, triton::size::dword);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 4, triton::size::dword);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 8, triton::size::dword);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+              postIndex = 48;
+              break;
+            }
+
+            /* LD3 multiple structure */
+            case triton::arch::arm::ID_VAS_2S: {
+              for (triton::uint32 i = 0; i != 8; i += 4) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 0, triton::size::dword);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 4, triton::size::dword);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 8, triton::size::dword);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+              postIndex = 24;
+              break;
+            }
+
+            /* LD3 multiple structure */
+            case triton::arch::arm::ID_VAS_2D: {
+              for (triton::uint32 i = 0; i != 16; i += 8) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 0,  triton::size::qword);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 8,  triton::size::qword);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 3) + 16, triton::size::qword);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+              postIndex = 48;
+              break;
+            }
+
+            default:
+              throw triton::exceptions::Semantics("AArch64Semantics::ld3_s(): Invalid VAS encoding.");
+          }
+
+          /* Create the semantics of the LD3 */
+          auto node0 = this->astCtxt->concat(vec0);
+          auto node1 = this->astCtxt->concat(vec1);
+          auto node2 = this->astCtxt->concat(vec2);
+
+          /* Create symbolic expression */
+          auto expr0 = this->symbolicEngine->createSymbolicExpression(inst, node0, vt0, "LD3 operation - LOAD access");
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, vt1, "LD3 operation - LOAD access");
+          auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, vt2, "LD3 operation - LOAD access");
+
+          /* Spread taint */
+          expr0->isTainted = vt0_t;
+          expr1->isTainted = vt1_t;
+          expr2->isTainted = vt2_t;
+
+          /*
+           * Register offset (Rm != 11111)
+           * LD3 { <Vt>.<T>, <Vt2>.<T>, <Vt3>.<T> }, [<Xn|SP>], <Xm>
+           */
+          if (inst.operands.size() == 5 && inst.operands[4].getType() == triton::arch::OP_REG) {
+            auto base   = mem.getBaseRegister();
+            auto offset = inst.operands[4].getRegister();
+
+            /* Create symbolic operands of the post computation */
+            auto baseNode   = this->symbolicEngine->getOperandAst(inst, base);
+            auto offsetNode = this->symbolicEngine->getOperandAst(inst, offset);
+
+            /* Create the semantics of the base register */
+            auto node3 = this->astCtxt->bvadd(baseNode, offsetNode);
+
+            /* Create symbolic expression */
+            auto expr3 = this->symbolicEngine->createSymbolicExpression(inst, node3, base, "LD3 operation - Post Index");
+
+            /* Spread taint */
+            expr3->isTainted = this->taintEngine->isTainted(base) | this->taintEngine->isTainted(offset);
+          }
+
+          /*
+           * Register offset (Rm == 11111)
+           * LD3 { <Vt>.<T>, <Vt2>.<T>, <Vt3>.<T> }, [<Xn|SP>], <imm>
+           */
+          else if (inst.operands.size() == 4 && inst.isWriteBack()) {
+            /* Create symbolic operands of the post computation */
+            auto base = mem.getBaseRegister();
+            auto baseNode = this->symbolicEngine->getOperandAst(inst, base);
+
+            /* Create the semantics of the base register */
+            auto node3 = this->astCtxt->bvadd(baseNode, this->astCtxt->bv(postIndex, base.getBitSize()));
+
+            /* Create symbolic expression */
+            auto expr3 = this->symbolicEngine->createSymbolicExpression(inst, node3, base, "LD3 operation - Post Index");
+
+            /* Spread taint */
+            expr3->isTainted = this->taintEngine->isTainted(base);
+          }
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ld3r_s(triton::arch::Instruction& inst) {
+          std::list<triton::ast::SharedAbstractNode> vec0;
+          std::list<triton::ast::SharedAbstractNode> vec1;
+          std::list<triton::ast::SharedAbstractNode> vec2;
+
+          triton::arch::OperandWrapper& vt0 = inst.operands[0]; /* vas register */
+          triton::arch::OperandWrapper& vt1 = inst.operands[1]; /* vas register */
+          triton::arch::OperandWrapper& vt2 = inst.operands[2]; /* vas register */
+          triton::arch::OperandWrapper& src = inst.operands[3]; /* memory */
+
+          bool vt0_t = false; /* taint state of vt0 */
+          bool vt1_t = false; /* taint state of vt1 */
+          bool vt2_t = false; /* taint state of vt2 */
+
+          /*
+           * Is the post-index immediate offset, encoded in size:
+           * 00 #3
+           * 01 #6
+           * 10 #12
+           * 11 #24
+           */
+          triton::uint32 postIndex = 0;
+
+          auto mem   = src.getConstMemory();
+          auto vas_e = vt0.getConstRegister().getVASType();
+
+          switch (vas_e) {
+            case triton::arch::arm::ID_VAS_16B: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0, triton::size::byte);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 1, triton::size::byte);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 2, triton::size::byte);
+
+              for (triton::uint32 i = 0; i != 16; i++) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+
+              postIndex = 3;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_8B: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0, triton::size::byte);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 1, triton::size::byte);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 2, triton::size::byte);
+
+              for (triton::uint32 i = 0; i != 8; i++) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+
+              postIndex = 3;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_8H: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0, triton::size::word);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 2, triton::size::word);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 4, triton::size::word);
+
+              for (triton::uint32 i = 0; i != 16; i += 2) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+
+              postIndex = 6;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_4H: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0, triton::size::word);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 2, triton::size::word);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 4, triton::size::word);
+
+              for (triton::uint32 i = 0; i != 8; i += 2) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+
+              postIndex = 6;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_4S: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0, triton::size::dword);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 4, triton::size::dword);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 8, triton::size::dword);
+
+              for (triton::uint32 i = 0; i != 16; i += 4) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+
+              postIndex = 12;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_2S: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0, triton::size::dword);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 4, triton::size::dword);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 8, triton::size::dword);
+
+              for (triton::uint32 i = 0; i != 8; i += 4) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+
+              postIndex = 12;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_2D: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0,  triton::size::qword);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 8,  triton::size::qword);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 16, triton::size::qword);
+
+              for (triton::uint32 i = 0; i != 16; i += 8) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+
+              postIndex = 24;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_1D: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0,  triton::size::qword);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 8,  triton::size::qword);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 16, triton::size::qword);
+
+              for (triton::uint32 i = 0; i != 8; i += 8) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+              }
+
+              postIndex = 24;
+              break;
+            }
+
+            default:
+              throw triton::exceptions::Semantics("AArch64Semantics::ld3r_s(): Invalid VAS encoding.");
+          }
+
+          /* Create the semantics of the LD3R */
+          auto node0 = this->astCtxt->concat(vec0);
+          auto node1 = this->astCtxt->concat(vec1);
+          auto node2 = this->astCtxt->concat(vec2);
+
+          /* Create symbolic expression */
+          auto expr0 = this->symbolicEngine->createSymbolicExpression(inst, node0, vt0, "LD3R operation - LOAD access");
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, vt1, "LD3R operation - LOAD access");
+          auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, vt2, "LD3R operation - LOAD access");
+
+          /* Spread taint */
+          expr0->isTainted = vt0_t;
+          expr1->isTainted = vt1_t;
+          expr2->isTainted = vt2_t;
+
+          /*
+           * Register offset (Rm != 11111)
+           * LD3R { <Vt>.<T>, <Vt2>.<T>, <Vt3>.<T> }, [<Xn|SP>], <Xm>
+           */
+          if (inst.operands.size() == 5 && inst.operands[4].getType() == triton::arch::OP_REG) {
+            auto base   = mem.getBaseRegister();
+            auto offset = inst.operands[4].getRegister();
+
+            /* Create symbolic operands of the post computation */
+            auto baseNode   = this->symbolicEngine->getOperandAst(inst, base);
+            auto offsetNode = this->symbolicEngine->getOperandAst(inst, offset);
+
+            /* Create the semantics of the base register */
+            auto node3 = this->astCtxt->bvadd(baseNode, offsetNode);
+
+            /* Create symbolic expression */
+            auto expr3 = this->symbolicEngine->createSymbolicExpression(inst, node3, base, "LD3R operation - Post Index");
+
+            /* Spread taint */
+            expr3->isTainted = this->taintEngine->isTainted(base) | this->taintEngine->isTainted(offset);
+          }
+
+          /*
+           * Register offset (Rm == 11111)
+           * LD3R { <Vt>.<T>, <Vt2>.<T>, <Vt3>.<T> }, [<Xn|SP>], <imm>
+           */
+          else if (inst.operands.size() == 4 && inst.isWriteBack()) {
+            /* Create symbolic operands of the post computation */
+            auto base = mem.getBaseRegister();
+            auto baseNode = this->symbolicEngine->getOperandAst(inst, base);
+
+            /* Create the semantics of the base register */
+            auto node3 = this->astCtxt->bvadd(baseNode, this->astCtxt->bv(postIndex, base.getBitSize()));
+
+            /* Create symbolic expression */
+            auto expr3 = this->symbolicEngine->createSymbolicExpression(inst, node3, base, "LD3R operation - Post Index");
+
+            /* Spread taint */
+            expr3->isTainted = this->taintEngine->isTainted(base);
+          }
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ld4_s(triton::arch::Instruction& inst) {
+          std::list<triton::ast::SharedAbstractNode> vec0;
+          std::list<triton::ast::SharedAbstractNode> vec1;
+          std::list<triton::ast::SharedAbstractNode> vec2;
+          std::list<triton::ast::SharedAbstractNode> vec3;
+
+          triton::arch::OperandWrapper& vt0 = inst.operands[0]; /* vas register */
+          triton::arch::OperandWrapper& vt1 = inst.operands[1]; /* vas register */
+          triton::arch::OperandWrapper& vt2 = inst.operands[2]; /* vas register */
+          triton::arch::OperandWrapper& vt3 = inst.operands[3]; /* vas register */
+          triton::arch::OperandWrapper& src = inst.operands[4]; /* memory */
+
+          bool vt0_t = false; /* taint state of vt0 */
+          bool vt1_t = false; /* taint state of vt1 */
+          bool vt2_t = false; /* taint state of vt2 */
+          bool vt3_t = false; /* taint state of vt3 */
+
+          /*
+           * Is the post-index immediate offset, encoded in Q:
+           * 0 #32
+           * 1 #64
+           */
+          triton::uint32 postIndex = 0;
+
+          auto mem   = src.getConstMemory();
+          auto vas_e = vt0.getConstRegister().getVASType();
+
+          switch (vas_e) {
+            /* LD4 multiple structure */
+            case triton::arch::arm::ID_VAS_16B: {
+              for (triton::uint32 i = 0; i != 16; i++) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 0, triton::size::byte);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 1, triton::size::byte);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 2, triton::size::byte);
+                auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 3, triton::size::byte);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+              postIndex = 64;
+              break;
+            }
+
+            /* LD4 multiple structure */
+            case triton::arch::arm::ID_VAS_8B: {
+              for (triton::uint32 i = 0; i != 8; i++) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 0, triton::size::byte);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 1, triton::size::byte);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 2, triton::size::byte);
+                auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 3, triton::size::byte);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+              postIndex = 32;
+              break;
+            }
+
+            /* LD4 multiple structure */
+            case triton::arch::arm::ID_VAS_8H: {
+              for (triton::uint32 i = 0; i != 16; i += 2) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 0, triton::size::word);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 2, triton::size::word);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 4, triton::size::word);
+                auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 6, triton::size::word);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+              postIndex = 64;
+              break;
+            }
+
+            /* LD4 multiple structure */
+            case triton::arch::arm::ID_VAS_4H: {
+              for (triton::uint32 i = 0; i != 8; i += 2) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 0, triton::size::word);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 2, triton::size::word);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 4, triton::size::word);
+                auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 6, triton::size::word);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+              postIndex = 32;
+              break;
+            }
+
+            /* LD4 multiple structure */
+            case triton::arch::arm::ID_VAS_4S: {
+              for (triton::uint32 i = 0; i != 16; i += 4) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 0, triton::size::dword);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 4, triton::size::dword);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 8, triton::size::dword);
+                auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 12, triton::size::dword);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+              postIndex = 64;
+              break;
+            }
+
+            /* LD4 multiple structure */
+            case triton::arch::arm::ID_VAS_2S: {
+              for (triton::uint32 i = 0; i != 8; i += 4) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 0, triton::size::dword);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 4, triton::size::dword);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 8, triton::size::dword);
+                auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 12, triton::size::dword);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+              postIndex = 32;
+              break;
+            }
+
+            /* LD4 multiple structure */
+            case triton::arch::arm::ID_VAS_2D: {
+              for (triton::uint32 i = 0; i != 16; i += 8) {
+                auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 0,  triton::size::qword);
+                auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 8,  triton::size::qword);
+                auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 16, triton::size::qword);
+                auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + (i * 4) + 24, triton::size::qword);
+
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+              postIndex = 64;
+              break;
+            }
+
+            default:
+              throw triton::exceptions::Semantics("AArch64Semantics::ld4_s(): Invalid VAS encoding.");
+          }
+
+          /* Create the semantics of the LD3 */
+          auto node0 = this->astCtxt->concat(vec0);
+          auto node1 = this->astCtxt->concat(vec1);
+          auto node2 = this->astCtxt->concat(vec2);
+          auto node3 = this->astCtxt->concat(vec3);
+
+          /* Create symbolic expression */
+          auto expr0 = this->symbolicEngine->createSymbolicExpression(inst, node0, vt0, "LD4 operation - LOAD access");
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, vt1, "LD4 operation - LOAD access");
+          auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, vt2, "LD4 operation - LOAD access");
+          auto expr3 = this->symbolicEngine->createSymbolicExpression(inst, node3, vt3, "LD4 operation - LOAD access");
+
+          /* Spread taint */
+          expr0->isTainted = vt0_t;
+          expr1->isTainted = vt1_t;
+          expr2->isTainted = vt2_t;
+          expr3->isTainted = vt3_t;
+
+          /*
+           * Register offset (Rm != 11111)
+           * LD4 { <Vt>.<T>, <Vt2>.<T>, <Vt3>.<T>, <Vt4>.<T> }, [<Xn|SP>], <Xm>
+           */
+          if (inst.operands.size() == 6 && inst.operands[5].getType() == triton::arch::OP_REG) {
+            auto base   = mem.getBaseRegister();
+            auto offset = inst.operands[5].getRegister();
+
+            /* Create symbolic operands of the post computation */
+            auto baseNode   = this->symbolicEngine->getOperandAst(inst, base);
+            auto offsetNode = this->symbolicEngine->getOperandAst(inst, offset);
+
+            /* Create the semantics of the base register */
+            auto node4 = this->astCtxt->bvadd(baseNode, offsetNode);
+
+            /* Create symbolic expression */
+            auto expr4 = this->symbolicEngine->createSymbolicExpression(inst, node4, base, "LD4 operation - Post Index");
+
+            /* Spread taint */
+            expr4->isTainted = this->taintEngine->isTainted(base) | this->taintEngine->isTainted(offset);
+          }
+
+          /*
+           * Register offset (Rm == 11111)
+           * LD4 { <Vt>.<T>, <Vt2>.<T>, <Vt3>.<T>, <Vt4>.<T> }, [<Xn|SP>], <imm>
+           */
+          else if (inst.operands.size() == 5 && inst.isWriteBack()) {
+            /* Create symbolic operands of the post computation */
+            auto base = mem.getBaseRegister();
+            auto baseNode = this->symbolicEngine->getOperandAst(inst, base);
+
+            /* Create the semantics of the base register */
+            auto node4 = this->astCtxt->bvadd(baseNode, this->astCtxt->bv(postIndex, base.getBitSize()));
+
+            /* Create symbolic expression */
+            auto expr4 = this->symbolicEngine->createSymbolicExpression(inst, node4, base, "LD4 operation - Post Index");
+
+            /* Spread taint */
+            expr4->isTainted = this->taintEngine->isTainted(base);
+          }
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ld4r_s(triton::arch::Instruction& inst) {
+          std::list<triton::ast::SharedAbstractNode> vec0;
+          std::list<triton::ast::SharedAbstractNode> vec1;
+          std::list<triton::ast::SharedAbstractNode> vec2;
+          std::list<triton::ast::SharedAbstractNode> vec3;
+
+          triton::arch::OperandWrapper& vt0 = inst.operands[0]; /* vas register */
+          triton::arch::OperandWrapper& vt1 = inst.operands[1]; /* vas register */
+          triton::arch::OperandWrapper& vt2 = inst.operands[2]; /* vas register */
+          triton::arch::OperandWrapper& vt3 = inst.operands[3]; /* vas register */
+          triton::arch::OperandWrapper& src = inst.operands[4]; /* memory */
+
+          bool vt0_t = false; /* taint state of vt0 */
+          bool vt1_t = false; /* taint state of vt1 */
+          bool vt2_t = false; /* taint state of vt2 */
+          bool vt3_t = false; /* taint state of vt3 */
+
+          /*
+           * Is the post-index immediate offset, encoded in size:
+           * 00 #4
+           * 01 #8
+           * 10 #16
+           * 11 #32
+           */
+          triton::uint32 postIndex = 0;
+
+          auto mem   = src.getConstMemory();
+          auto vas_e = vt0.getConstRegister().getVASType();
+
+          switch (vas_e) {
+            case triton::arch::arm::ID_VAS_16B: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0, triton::size::byte);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 1, triton::size::byte);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 2, triton::size::byte);
+              auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + 3, triton::size::byte);
+
+              for (triton::uint32 i = 0; i != 16; i++) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+
+              postIndex = 4;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_8B: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0, triton::size::byte);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 1, triton::size::byte);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 2, triton::size::byte);
+              auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + 3, triton::size::byte);
+
+              for (triton::uint32 i = 0; i != 8; i++) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+
+              postIndex = 4;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_8H: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0, triton::size::word);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 2, triton::size::word);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 4, triton::size::word);
+              auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + 6, triton::size::word);
+
+              for (triton::uint32 i = 0; i != 16; i += 2) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+
+              postIndex = 8;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_4H: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0, triton::size::word);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 2, triton::size::word);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 4, triton::size::word);
+              auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + 6, triton::size::word);
+
+              for (triton::uint32 i = 0; i != 8; i += 2) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+
+              postIndex = 8;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_4S: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0, triton::size::dword);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 4, triton::size::dword);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 8, triton::size::dword);
+              auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + 12, triton::size::dword);
+
+              for (triton::uint32 i = 0; i != 16; i += 4) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+
+              postIndex = 16;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_2S: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0, triton::size::dword);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 4, triton::size::dword);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 8, triton::size::dword);
+              auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + 12, triton::size::dword);
+
+              for (triton::uint32 i = 0; i != 8; i += 4) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+
+              postIndex = 16;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_2D: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0,  triton::size::qword);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 8,  triton::size::qword);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 16, triton::size::qword);
+              auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + 24, triton::size::qword);
+
+              for (triton::uint32 i = 0; i != 16; i += 8) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+
+              postIndex = 32;
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_1D: {
+              auto vt0_m = triton::arch::MemoryAccess(mem.getAddress() + 0,  triton::size::qword);
+              auto vt1_m = triton::arch::MemoryAccess(mem.getAddress() + 8,  triton::size::qword);
+              auto vt2_m = triton::arch::MemoryAccess(mem.getAddress() + 16, triton::size::qword);
+              auto vt3_m = triton::arch::MemoryAccess(mem.getAddress() + 24, triton::size::qword);
+
+              for (triton::uint32 i = 0; i != 8; i += 8) {
+                vec0.push_front(this->symbolicEngine->getMemoryAst(inst, vt0_m));
+                vec1.push_front(this->symbolicEngine->getMemoryAst(inst, vt1_m));
+                vec2.push_front(this->symbolicEngine->getMemoryAst(inst, vt2_m));
+                vec3.push_front(this->symbolicEngine->getMemoryAst(inst, vt3_m));
+
+                vt0_t |= this->taintEngine->isMemoryTainted(vt0_m);
+                vt1_t |= this->taintEngine->isMemoryTainted(vt1_m);
+                vt2_t |= this->taintEngine->isMemoryTainted(vt2_m);
+                vt3_t |= this->taintEngine->isMemoryTainted(vt3_m);
+              }
+
+              postIndex = 32;
+              break;
+            }
+
+            default:
+              throw triton::exceptions::Semantics("AArch64Semantics::ld4r_s(): Invalid VAS encoding.");
+          }
+
+          /* Create the semantics of the LD3R */
+          auto node0 = this->astCtxt->concat(vec0);
+          auto node1 = this->astCtxt->concat(vec1);
+          auto node2 = this->astCtxt->concat(vec2);
+          auto node3 = this->astCtxt->concat(vec3);
+
+          /* Create symbolic expression */
+          auto expr0 = this->symbolicEngine->createSymbolicExpression(inst, node0, vt0, "LD4R operation - LOAD access");
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, vt1, "LD4R operation - LOAD access");
+          auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, vt2, "LD4R operation - LOAD access");
+          auto expr3 = this->symbolicEngine->createSymbolicExpression(inst, node3, vt3, "LD4R operation - LOAD access");
+
+          /* Spread taint */
+          expr0->isTainted = vt0_t;
+          expr1->isTainted = vt1_t;
+          expr2->isTainted = vt2_t;
+          expr3->isTainted = vt3_t;
+
+          /*
+           * Register offset (Rm != 11111)
+           * LD4R { <Vt>.<T>, <Vt2>.<T>, <Vt3>.<T>, <Vt4>.<T> }, [<Xn|SP>], <Xm>
+           */
+          if (inst.operands.size() == 6 && inst.operands[5].getType() == triton::arch::OP_REG) {
+            auto base   = mem.getBaseRegister();
+            auto offset = inst.operands[5].getRegister();
+
+            /* Create symbolic operands of the post computation */
+            auto baseNode   = this->symbolicEngine->getOperandAst(inst, base);
+            auto offsetNode = this->symbolicEngine->getOperandAst(inst, offset);
+
+            /* Create the semantics of the base register */
+            auto node4 = this->astCtxt->bvadd(baseNode, offsetNode);
+
+            /* Create symbolic expression */
+            auto expr4 = this->symbolicEngine->createSymbolicExpression(inst, node4, base, "LD4R operation - Post Index");
+
+            /* Spread taint */
+            expr4->isTainted = this->taintEngine->isTainted(base) | this->taintEngine->isTainted(offset);
+          }
+
+          /*
+           * Register offset (Rm == 11111)
+           * LD4R { <Vt>.<T>, <Vt2>.<T>, <Vt3>.<T>, <Vt4>.<T> }, [<Xn|SP>], <imm>
+           */
+          else if (inst.operands.size() == 5 && inst.isWriteBack()) {
+            /* Create symbolic operands of the post computation */
+            auto base = mem.getBaseRegister();
+            auto baseNode = this->symbolicEngine->getOperandAst(inst, base);
+
+            /* Create the semantics of the base register */
+            auto node4 = this->astCtxt->bvadd(baseNode, this->astCtxt->bv(postIndex, base.getBitSize()));
+
+            /* Create symbolic expression */
+            auto expr4 = this->symbolicEngine->createSymbolicExpression(inst, node4, base, "LD4R operation - Post Index");
+
+            /* Spread taint */
+            expr4->isTainted = this->taintEngine->isTainted(base);
+          }
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
 
         void AArch64Semantics::ldar_s(triton::arch::Instruction& inst) {
           triton::arch::OperandWrapper& dst = inst.operands[0];
@@ -1747,9 +3389,6 @@ namespace triton {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
 
-          /* Special behavior: Define that the size of the memory access is 8 bits */
-          src.getMemory().setBits(7, 0);
-
           /* Create the semantics of the LOAD */
           auto node = this->symbolicEngine->getOperandAst(inst, src);
 
@@ -1768,14 +3407,65 @@ namespace triton {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
 
-          /* Special behavior: Define that the size of the memory access is 16 bits */
-          src.getMemory().setBits(15, 0);
-
           /* Create the semantics of the LOAD */
           auto node = this->symbolicEngine->getOperandAst(inst, src);
 
           /* Create symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDARH operation - LOAD access");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldapr_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create the semantics of the LOAD */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDAPR operation - LOAD access");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldaprb_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create the semantics of the LOAD */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDAPRB operation - LOAD access");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldaprh_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create the semantics of the LOAD */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDAPRH operation - LOAD access");
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->taintAssignment(dst, src);
@@ -1798,6 +3488,9 @@ namespace triton {
           /* Spread taint */
           expr->isTainted = this->taintEngine->taintAssignment(dst, src);
 
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(src.getConstMemory(), true);
+
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
         }
@@ -1806,9 +3499,6 @@ namespace triton {
         void AArch64Semantics::ldaxrb_s(triton::arch::Instruction& inst) {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
-
-          /* Special behavior: Define that the size of the memory access is 8 bits */
-          src.getMemory().setBits(7, 0);
 
           /* Create the semantics of the LOAD */
           auto node = this->symbolicEngine->getOperandAst(inst, src);
@@ -1819,6 +3509,9 @@ namespace triton {
           /* Spread taint */
           expr->isTainted = this->taintEngine->taintAssignment(dst, src);
 
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(src.getConstMemory(), true);
+
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
         }
@@ -1828,9 +3521,6 @@ namespace triton {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
 
-          /* Special behavior: Define that the size of the memory access is 16 bits */
-          src.getMemory().setBits(15, 0);
-
           /* Create the semantics of the LOAD */
           auto node = this->symbolicEngine->getOperandAst(inst, src);
 
@@ -1839,6 +3529,37 @@ namespace triton {
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(src.getConstMemory(), true);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldnp_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst1 = inst.operands[0];
+          triton::arch::OperandWrapper& dst2 = inst.operands[1];
+          triton::arch::OperandWrapper& src  = inst.operands[2];
+
+          /* Special behavior: Define that the size of the memory access is dst1.size + dst2.size */
+          src.getMemory().setBits((dst1.getBitSize() + dst2.getBitSize()) - 1, 0);
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->extract((dst1.getBitSize() - 1), 0, op);
+          auto node2 = this->astCtxt->extract((dst1.getBitSize() + dst2.getBitSize()) - 1, dst1.getBitSize(), op);
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "LDNP operation - LOAD access");
+          auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "LDNP operation - LOAD access");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->taintAssignment(dst1, src);
+          expr2->isTainted = this->taintEngine->taintAssignment(dst2, src);
 
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
@@ -1907,9 +3628,73 @@ namespace triton {
         }
 
 
+        void AArch64Semantics::ldpsw_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst1 = inst.operands[0];
+          triton::arch::OperandWrapper& dst2 = inst.operands[1];
+          triton::arch::OperandWrapper& src  = inst.operands[2];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->sx(32, this->astCtxt->extract(31, 0, op));
+          auto node2 = this->astCtxt->sx(32, this->astCtxt->extract(63, 32, op));
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "LDPSW operation - LOAD access");
+          auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "LDPSW operation - LOAD access");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->taintAssignment(dst1, src);
+          expr2->isTainted = this->taintEngine->taintAssignment(dst2, src);
+
+          /* Optional behavior. Post computation of the base register */
+          /* LDPSW <Xt1>, <Xt2>, [<Xn|SP>], #<imm> */
+          if (inst.operands.size() == 4) {
+            triton::arch::Immediate& imm = inst.operands[3].getImmediate();
+            triton::arch::Register& base = src.getMemory().getBaseRegister();
+
+            /* Create symbolic operands of the post computation */
+            auto baseNode = this->symbolicEngine->getOperandAst(inst, base);
+            auto immNode  = this->symbolicEngine->getOperandAst(inst, imm);
+
+            /* Create the semantics of the base register */
+            auto node2 = this->astCtxt->bvadd(baseNode, this->astCtxt->sx(base.getBitSize() - imm.getBitSize(), immNode));
+
+            /* Create symbolic expression */
+            auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, base, "LDPSW operation - Base register computation");
+
+            /* Spread taint */
+            expr2->isTainted = this->taintEngine->isTainted(base);
+          }
+
+          /* LDPSW <Xt1>, <Xt2>, [<Xn|SP>, #<imm>]! */
+          else if (inst.operands.size() == 3 && inst.isWriteBack() == true) {
+            triton::arch::Register& base = src.getMemory().getBaseRegister();
+
+            /* Create the semantics of the base register */
+            auto node3 = src.getMemory().getLeaAst();
+
+            /* Create symbolic expression */
+            auto expr3 = this->symbolicEngine->createSymbolicExpression(inst, node3, base, "LDPSW operation - Base register computation");
+
+            /* Spread taint */
+            expr3->isTainted = this->taintEngine->isTainted(base);
+          }
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
         void AArch64Semantics::ldr_s(triton::arch::Instruction& inst) {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* LDR (literal) */
+          if (inst.operands.size() == 2 && src.getType() == triton::arch::OP_IMM) {
+            src = triton::arch::MemoryAccess(src.getConstImmediate().getValue(), dst.getSize());
+          }
 
           /* Create the semantics of the LOAD */
           auto node1 = this->symbolicEngine->getOperandAst(inst, src);
@@ -1939,7 +3724,6 @@ namespace triton {
             /* Spread taint */
             expr2->isTainted = this->taintEngine->isTainted(base);
           }
-
           /* LDR <Xt>, [<Xn|SP>, #<simm>]! */
           else if (inst.operands.size() == 2 && inst.isWriteBack() == true) {
             triton::arch::Register& base = src.getMemory().getBaseRegister();
@@ -1962,9 +3746,6 @@ namespace triton {
         void AArch64Semantics::ldrb_s(triton::arch::Instruction& inst) {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
-
-          /* Special behavior: Define that the size of the memory access is 8 bits */
-          src.getMemory().setBits(7, 0);
 
           /* Create the semantics of the LOAD */
           auto node1 = this->symbolicEngine->getOperandAst(inst, src);
@@ -2018,9 +3799,6 @@ namespace triton {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
 
-          /* Special behavior: Define that the size of the memory access is 16 bits */
-          src.getMemory().setBits(15, 0);
-
           /* Create the semantics of the LOAD */
           auto node1 = this->symbolicEngine->getOperandAst(inst, src);
 
@@ -2073,14 +3851,11 @@ namespace triton {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
 
-          /* Special behavior: Define that the size of the memory access is 8 bits */
-          src.getMemory().setBits(7, 0);
-
           /* Create symbolic operands */
           auto op = this->symbolicEngine->getOperandAst(inst, src);
 
           /* Create the semantics of the LOAD */
-          auto node1 = this->astCtxt->sx(dst.getBitSize() - 8, op);
+          auto node1 = this->astCtxt->sx(dst.getBitSize() - 8, this->astCtxt->extract(7, 0, op));
 
           /* Create symbolic expression */
           auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst, "LDRSB operation - LOAD access");
@@ -2131,14 +3906,11 @@ namespace triton {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
 
-          /* Special behavior: Define that the size of the memory access is 16 bits */
-          src.getMemory().setBits(15, 0);
-
           /* Create symbolic operands */
           auto op = this->symbolicEngine->getOperandAst(inst, src);
 
           /* Create the semantics of the LOAD */
-          auto node1 = this->astCtxt->sx(dst.getBitSize() - 16, op);
+          auto node1 = this->astCtxt->sx(dst.getBitSize() - 16, this->astCtxt->extract(15, 0, op));
 
           /* Create symbolic expression */
           auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst, "LDRSH operation - LOAD access");
@@ -2189,14 +3961,16 @@ namespace triton {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
 
-          /* Special behavior: Define that the size of the memory access is 32 bits */
-          src.getMemory().setBits(31, 0);
+          /* LDRSW (literal) */
+          if (inst.operands.size() == 2 && src.getType() == triton::arch::OP_IMM) {
+            src = triton::arch::MemoryAccess(src.getConstImmediate().getValue(), dst.getSize());
+          }
 
           /* Create symbolic operands */
           auto op = this->symbolicEngine->getOperandAst(inst, src);
 
           /* Create the semantics of the LOAD */
-          auto node1 = this->astCtxt->sx(dst.getBitSize() - 32, op);
+          auto node1 = this->astCtxt->sx(dst.getBitSize() - 32, this->astCtxt->extract(31, 0, op));
 
           /* Create symbolic expression */
           auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst, "LDRSW operation - LOAD access");
@@ -2243,6 +4017,252 @@ namespace triton {
         }
 
 
+        void AArch64Semantics::ldtr_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create the semantics of the LOAD */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDTR operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldtrb_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->zx(dst.getBitSize() - 8, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDTRB operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldtrh_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->zx(dst.getBitSize() - 16, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDTRH operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldtrsb_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->sx(dst.getBitSize() - 8, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDTRSB operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldtrsh_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->sx(dst.getBitSize() - 16, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDTRSH operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldtrsw_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->sx(dst.getBitSize() - 32, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDTRSW operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldapur_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create the semantics of the LOAD */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDAPUR operation - LOAD access");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldapurb_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->zx(dst.getBitSize() - 8, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDAPURB operation - LOAD access");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldapurh_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->zx(dst.getBitSize() - 16, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDAPURH operation - LOAD access");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldapursb_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->sx(dst.getBitSize() - 8, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDAPURSB operation - LOAD access");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldapursh_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->sx(dst.getBitSize() - 16, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDAPURSH operation - LOAD access");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldapursw_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst = inst.operands[0];
+          triton::arch::OperandWrapper& src = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->sx(dst.getBitSize() - 32, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "LDAPURSW operation - LOAD access");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
         void AArch64Semantics::ldur_s(triton::arch::Instruction& inst) {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
@@ -2265,9 +4285,6 @@ namespace triton {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
 
-          /* Special behavior: Define that the size of the memory access is 8 bits */
-          src.getMemory().setBits(7, 0);
-
           /* Create symbolic operands */
           auto op = this->symbolicEngine->getOperandAst(inst, src);
 
@@ -2288,9 +4305,6 @@ namespace triton {
         void AArch64Semantics::ldurh_s(triton::arch::Instruction& inst) {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
-
-          /* Special behavior: Define that the size of the memory access is 16 bits */
-          src.getMemory().setBits(15, 0);
 
           /* Create symbolic operands */
           auto op = this->symbolicEngine->getOperandAst(inst, src);
@@ -2313,9 +4327,6 @@ namespace triton {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
 
-          /* Special behavior: Define that the size of the memory access is 8 bits */
-          src.getMemory().setBits(7, 0);
-
           /* Create symbolic operands */
           auto op = this->symbolicEngine->getOperandAst(inst, src);
 
@@ -2336,9 +4347,6 @@ namespace triton {
         void AArch64Semantics::ldursh_s(triton::arch::Instruction& inst) {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
-
-          /* Special behavior: Define that the size of the memory access is 16 bits */
-          src.getMemory().setBits(15, 0);
 
           /* Create symbolic operands */
           auto op = this->symbolicEngine->getOperandAst(inst, src);
@@ -2361,9 +4369,6 @@ namespace triton {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
 
-          /* Special behavior: Define that the size of the memory access is 32 bits */
-          src.getMemory().setBits(31, 0);
-
           /* Create symbolic operands */
           auto op = this->symbolicEngine->getOperandAst(inst, src);
 
@@ -2375,6 +4380,37 @@ namespace triton {
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ldxp_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst1 = inst.operands[0];
+          triton::arch::OperandWrapper& dst2 = inst.operands[1];
+          triton::arch::OperandWrapper& src  = inst.operands[2];
+
+          /* Special behavior: Define that the size of the memory access is dst1.size + dst2.size */
+          src.getMemory().setBits((dst1.getBitSize() + dst2.getBitSize()) - 1, 0);
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->extract((dst1.getBitSize() - 1), 0, op);
+          auto node2 = this->astCtxt->extract((dst1.getBitSize() + dst2.getBitSize()) - 1, dst1.getBitSize(), op);
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "LDXP operation - LOAD access");
+          auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "LDXP operation - LOAD access");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->taintAssignment(dst1, src);
+          expr2->isTainted = this->taintEngine->taintAssignment(dst2, src);
+
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(src.getConstMemory(), true);
 
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
@@ -2394,6 +4430,9 @@ namespace triton {
           /* Spread taint */
           expr->isTainted = this->taintEngine->taintAssignment(dst, src);
 
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(src.getConstMemory(), true);
+
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
         }
@@ -2402,9 +4441,6 @@ namespace triton {
         void AArch64Semantics::ldxrb_s(triton::arch::Instruction& inst) {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
-
-          /* Special behavior: Define that the size of the memory access is 8 bits */
-          src.getMemory().setBits(7, 0);
 
           /* Create symbolic operands */
           auto op = this->symbolicEngine->getOperandAst(inst, src);
@@ -2418,6 +4454,9 @@ namespace triton {
           /* Spread taint */
           expr->isTainted = this->taintEngine->taintAssignment(dst, src);
 
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(src.getConstMemory(), true);
+
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
         }
@@ -2426,9 +4465,6 @@ namespace triton {
         void AArch64Semantics::ldxrh_s(triton::arch::Instruction& inst) {
           triton::arch::OperandWrapper& dst = inst.operands[0];
           triton::arch::OperandWrapper& src = inst.operands[1];
-
-          /* Special behavior: Define that the size of the memory access is 16 bits */
-          src.getMemory().setBits(15, 0);
 
           /* Create symbolic operands */
           auto op = this->symbolicEngine->getOperandAst(inst, src);
@@ -2441,6 +4477,9 @@ namespace triton {
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(src.getConstMemory(), true);
 
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
@@ -2556,8 +4595,103 @@ namespace triton {
           /* Create the semantics */
           auto node = this->symbolicEngine->getOperandAst(inst, src);
 
+          /*
+           * The source can be wider than the destination: Capstone's MOV aliases of
+           * MOVN, MOVZ and ORR (immediate) carry a 32-bit value sign-extended to 64
+           * bits (mov w0, #-0x80000000), and mov w0, v1.s[0] passes the whole vector
+           * register. Only the low bits that fit in the destination are written.
+           */
+          if (node->getBitvectorSize() > dst.getBitSize()) {
+            node = this->astCtxt->extract(dst.getBitSize() - 1, 0, node);
+          }
+
           /* Create symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "MOV operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::movi_s(triton::arch::Instruction& inst) {
+          std::list<triton::ast::SharedAbstractNode> vec;
+
+          triton::arch::OperandWrapper& dst = inst.operands[0]; /* vas register */
+          triton::arch::OperandWrapper& src = inst.operands[1]; /* imm */
+
+          /* Create symbolic operands */
+          auto imm = this->symbolicEngine->getOperandAst(inst, src);
+          auto vas_e = dst.getConstRegister().getVASType();
+
+          switch (vas_e) {
+            case triton::arch::arm::ID_VAS_16B: {
+              for (triton::uint32 i = 0; i != 16; i++) {
+                vec.push_front(this->astCtxt->extract(7, 0, imm));
+              }
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_8B: {
+              for (triton::uint32 i = 0; i != 8; i++) {
+                vec.push_front(this->astCtxt->extract(7, 0, imm));
+              }
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_8H: {
+              for (triton::uint32 i = 0; i != 16; i += 2) {
+                vec.push_front(this->astCtxt->extract(15, 0, imm));
+              }
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_4H: {
+              for (triton::uint32 i = 0; i != 8; i += 2) {
+                vec.push_front(this->astCtxt->extract(15, 0, imm));
+              }
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_4S: {
+              for (triton::uint32 i = 0; i != 16; i += 4) {
+                vec.push_front(this->astCtxt->extract(31, 0, imm));
+              }
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_2S: {
+              for (triton::uint32 i = 0; i != 8; i += 4) {
+                vec.push_front(this->astCtxt->extract(31, 0, imm));
+              }
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_2D: {
+              for (triton::uint32 i = 0; i != 16; i += 8) {
+                vec.push_front(this->astCtxt->extract(63, 0, imm));
+              }
+              break;
+            }
+
+            case triton::arch::arm::ID_VAS_1D: {
+              for (triton::uint32 i = 0; i != 8; i += 8) {
+                vec.push_front(this->astCtxt->extract(63, 0, imm));
+              }
+              break;
+            }
+
+            default:
+              throw triton::exceptions::Semantics("AArch64Semantics::movi_s(): Invalid VAS encoding.");
+          }
+
+          /* Create the semantics */
+          auto node = this->astCtxt->concat(vec);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "MOVI operation");
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->taintAssignment(dst, src);
@@ -2670,6 +4804,42 @@ namespace triton {
         }
 
 
+        void AArch64Semantics::mrs_s(triton::arch::Instruction& inst) {
+          auto& dst = inst.operands[0];
+          auto& src = inst.operands[1];
+
+          /* Create the semantics */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "MRS operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::msr_s(triton::arch::Instruction& inst) {
+          auto& dst = inst.operands[0];
+          auto& src = inst.operands[1];
+
+          /* Create the semantics */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "MSR operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
         void AArch64Semantics::msub_s(triton::arch::Instruction& inst) {
           auto& dst  = inst.operands[0];
           auto& src1 = inst.operands[1];
@@ -2744,16 +4914,57 @@ namespace triton {
           auto& src = inst.operands[1];
 
           /* Create symbolic operands */
-          auto op = this->symbolicEngine->getOperandAst(inst, src);
+          auto op1 = this->astCtxt->bv(0, dst.getBitSize());
+          auto op2 = this->symbolicEngine->getOperandAst(inst, src);
 
           /* Create the semantics */
-          auto node = this->astCtxt->bvneg(op);
+          auto node = this->astCtxt->bvsub(op1, op2);
 
           /* Create symbolic expression */
-          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "MEG operation");
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "NEG(S) operation");
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update symbolic flags */
+          if (inst.isUpdateFlag() == true) {
+            this->cfSub_s(inst, expr, dst, op1, op2);
+            this->nf_s(inst, expr, dst);
+            this->vfSub_s(inst, expr, dst, op1, op2);
+            this->zf_s(inst, expr, dst);
+          }
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::ngc_s(triton::arch::Instruction& inst) {
+          auto& dst = inst.operands[0];
+          auto& src = inst.operands[1];
+          auto  cf  = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_C));
+
+          /* Create symbolic operands */
+          auto op1 = this->astCtxt->bv(0, dst.getBitSize());
+          auto op2 = this->symbolicEngine->getOperandAst(inst, src);
+          auto op3 = this->symbolicEngine->getOperandAst(inst, cf);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->bvadd(this->astCtxt->bvnot(op2), this->astCtxt->zx(dst.getBitSize()-1, op3));
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "NGC(S) operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->setTaint(dst, this->taintEngine->isTainted(src) | this->taintEngine->isTainted(cf));
+
+          /* Update symbolic flags */
+          if (inst.isUpdateFlag() == true) {
+            this->cfSub_s(inst, expr, dst, op1, op2);
+            this->nf_s(inst, expr, dst);
+            this->vfSub_s(inst, expr, dst, op1, op2);
+            this->zf_s(inst, expr, dst);
+          }
 
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
@@ -2801,11 +5012,58 @@ namespace triton {
           /* Create the semantics */
           auto node = this->astCtxt->bvor(op1, op2);
 
+          /* Special case for vector registers */
+          if (dst.getConstRegister().getVASSize() == triton::size::qword) {
+            node = this->astCtxt->extract(63, 0, node);
+          }
+
           /* Create symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "ORR operation");
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->setTaint(dst, this->taintEngine->isTainted(src1) | this->taintEngine->isTainted(src2));
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::pacia_s(triton::arch::Instruction& inst) {
+          auto& src = inst.operands[1];
+
+          /* Link the diversifier to the instruction */
+          this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Do not care about the PAC, we just keep the same pointer */
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::pacib_s(triton::arch::Instruction& inst) {
+          auto& src = inst.operands[1];
+
+          /* Link the diversifier to the instruction */
+          this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Do not care about the PAC, we just keep the same pointer */
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::paciza_s(triton::arch::Instruction& inst) {
+          /* Do not care about the PAC, we just keep the same pointer */
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::pacizb_s(triton::arch::Instruction& inst) {
+          /* Do not care about the PAC, we just keep the same pointer */
 
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
@@ -2992,6 +5250,75 @@ namespace triton {
         }
 
 
+        void AArch64Semantics::sbc_s(triton::arch::Instruction& inst) {
+          auto& dst  = inst.operands[0];
+          auto& src1 = inst.operands[1];
+          auto& src2 = inst.operands[2];
+          auto  cf   = triton::arch::OperandWrapper(this->architecture->getRegister(ID_REG_AARCH64_C));
+
+          /* Create symbolic operands */
+          auto op1 = this->symbolicEngine->getOperandAst(inst, src1);
+          auto op2 = this->symbolicEngine->getOperandAst(inst, src2);
+          auto op3 = this->symbolicEngine->getOperandAst(inst, cf);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->bvadd(this->astCtxt->bvadd(op1, this->astCtxt->bvnot(op2)), this->astCtxt->zx(dst.getBitSize()-1, op3));
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "SBC(S) operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->setTaint(dst, this->taintEngine->isTainted(src1) | this->taintEngine->isTainted(src2) | this->taintEngine->isTainted(cf));
+
+          /* Update symbolic flags */
+          if (inst.isUpdateFlag() == true) {
+            this->cfSub_s(inst, expr, src1, op1, op2);
+            this->nf_s(inst, expr, src1);
+            this->vfSub_s(inst, expr, src1, op1, op2);
+            this->zf_s(inst, expr, src1);
+          }
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::sbfiz_s(triton::arch::Instruction& inst) {
+          auto& dst   = inst.operands[0];
+          auto& src1  = inst.operands[1];
+          auto& src2  = inst.operands[2];
+          auto& src3  = inst.operands[3];
+          auto  lsb   = static_cast<uint32>(src2.getImmediate().getValue());
+          auto  width = static_cast<uint32>(src3.getImmediate().getValue());
+
+          if (lsb + width > dst.getBitSize())
+            throw triton::exceptions::Semantics("AArch64Semantics::sbfiz_s(): Invalid lsb and width.");
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src1);
+
+          /* Create the semantics: the field, sign-extended above and shifted left by lsb */
+          auto node = this->astCtxt->extract(width - 1, 0, op);
+
+          if (lsb + width < dst.getBitSize()) {
+            node = this->astCtxt->sx(dst.getBitSize() - (lsb + width), node);
+          }
+
+          if (lsb) {
+            node = this->astCtxt->concat(node, this->astCtxt->bv(0, lsb));
+          }
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "SBFIZ operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src1);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
         void AArch64Semantics::sbfx_s(triton::arch::Instruction& inst) {
           auto& dst   = inst.operands[0];
           auto& src1  = inst.operands[1];
@@ -3072,6 +5399,34 @@ namespace triton {
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->setTaint(dst, this->taintEngine->isTainted(src1) | this->taintEngine->isTainted(src2) | this->taintEngine->isTainted(src3));
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::smnegl_s(triton::arch::Instruction& inst) {
+          auto& dst  = inst.operands[0];
+          auto& src1 = inst.operands[1];
+          auto& src2 = inst.operands[2];
+
+          /* Create symbolic operands */
+          auto op1 = this->symbolicEngine->getOperandAst(inst, src1);
+          auto op2 = this->symbolicEngine->getOperandAst(inst, src2);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->bvneg(
+                        this->astCtxt->bvmul(
+                          this->astCtxt->sx(triton::bitsize::dword, op1),
+                          this->astCtxt->sx(triton::bitsize::dword, op2)
+                        )
+                      );
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "SMNEGL operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->setTaint(dst, this->taintEngine->isTainted(src1) | this->taintEngine->isTainted(src2));
 
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
@@ -3187,11 +5542,11 @@ namespace triton {
           triton::arch::OperandWrapper& src = inst.operands[0];
           triton::arch::OperandWrapper& dst = inst.operands[1];
 
-          /* Create the semantics of the STORE */
-          auto node = this->symbolicEngine->getOperandAst(inst, src);
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
 
-          /* Special behavior: Define that the size of the memory access is 8 bits */
-          dst.getMemory().setBits(7, 0);
+          /* Create the semantics */
+          auto node = this->astCtxt->extract(7, 0, op);
 
           /* Create symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "STLRB operation - STORE access");
@@ -3208,17 +5563,145 @@ namespace triton {
           triton::arch::OperandWrapper& src = inst.operands[0];
           triton::arch::OperandWrapper& dst = inst.operands[1];
 
-          /* Create the semantics of the STORE */
-          auto node = this->symbolicEngine->getOperandAst(inst, src);
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
 
-          /* Special behavior: Define that the size of the memory access is 16 bits */
-          dst.getMemory().setBits(15, 0);
+          /* Create the semantics */
+          auto node = this->astCtxt->extract(15, 0, op);
 
           /* Create symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "STLRH operation - STORE access");
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::stlxr_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst1 = inst.operands[0]; /* status */
+          triton::arch::OperandWrapper& src  = inst.operands[1];
+          triton::arch::OperandWrapper& dst2 = inst.operands[2];
+
+          /* Is memory exclusive */
+          bool exclusive = this->architecture->isMemoryExclusive(dst2.getConstMemory());
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->bv(exclusive ? 0 : 1, dst1.getBitSize());
+          auto node2 = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "STLXR operation - write status");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->setTaint(dst1, false);
+
+          /* Exclusive operation */
+          if (exclusive) {
+            auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "STLXR operation - STORE access");
+            expr2->isTainted = this->taintEngine->taintAssignment(dst2, src);
+          }
+
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(dst2.getConstMemory(), false);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::stlxrb_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst1 = inst.operands[0]; /* status */
+          triton::arch::OperandWrapper& src  = inst.operands[1];
+          triton::arch::OperandWrapper& dst2 = inst.operands[2];
+
+          /* Is memory exclusive */
+          bool exclusive = this->architecture->isMemoryExclusive(dst2.getConstMemory());
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->bv(exclusive ? 0 : 1, dst1.getBitSize());
+          auto node2 = this->astCtxt->extract(7, 0, op);
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "STLXRB operation - write status");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->setTaint(dst1, false);
+
+          /* Exclusive operation */
+          if (exclusive) {
+            auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "STLXRB operation - STORE access");
+            expr2->isTainted = this->taintEngine->taintAssignment(dst2, src);
+          }
+
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(dst2.getConstMemory(), false);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::stlxrh_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst1 = inst.operands[0]; /* status */
+          triton::arch::OperandWrapper& src  = inst.operands[1];
+          triton::arch::OperandWrapper& dst2 = inst.operands[2];
+
+          /* Is memory exclusive */
+          bool exclusive = this->architecture->isMemoryExclusive(dst2.getConstMemory());
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->bv(exclusive ? 0 : 1, dst1.getBitSize());
+          auto node2 = this->astCtxt->extract(15, 0, op);
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "STLXRH operation - write status");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->setTaint(dst1, false);
+
+          /* Exclusive operation */
+          if (exclusive) {
+            auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "STLXRH operation - STORE access");
+            expr2->isTainted = this->taintEngine->taintAssignment(dst2, src);
+          }
+
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(dst2.getConstMemory(), false);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::stnp_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& src1 = inst.operands[0];
+          triton::arch::OperandWrapper& src2 = inst.operands[1];
+          triton::arch::OperandWrapper& dst  = inst.operands[2];
+
+          /* Create symbolic operands */
+          auto op1 = this->symbolicEngine->getOperandAst(inst, src1);
+          auto op2 = this->symbolicEngine->getOperandAst(inst, src2);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->concat(op2, op1);
+
+          /* Special behavior: Define that the size of the memory access is src1.size + src2.size */
+          dst.getMemory().setBits(node->getBitvectorSize()-1, 0);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "STNP operation - STORE access");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->setTaint(dst, this->taintEngine->isTainted(src1) | this->taintEngine->isTainted(src2));
 
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
@@ -3347,9 +5830,6 @@ namespace triton {
           /* Create the semantics */
           auto node1 = this->astCtxt->extract(7, 0, op);
 
-          /* Special behavior: Define that the size of the memory access is 8 bits */
-          dst.getMemory().setBits(7, 0);
-
           /* Create symbolic expression */
           auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst, "STRB operation - STORE access");
 
@@ -3405,9 +5885,6 @@ namespace triton {
           /* Create the semantics */
           auto node1 = this->astCtxt->extract(15, 0, op);
 
-          /* Special behavior: Define that the size of the memory access is 16 bits */
-          dst.getMemory().setBits(15, 0);
-
           /* Create symbolic expression */
           auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst, "STRH operation - STORE access");
 
@@ -3453,6 +5930,126 @@ namespace triton {
         }
 
 
+        void AArch64Semantics::sttr_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& src = inst.operands[0];
+          triton::arch::OperandWrapper& dst = inst.operands[1];
+
+          /* Create the semantics of the STORE */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "STTR operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::sttrb_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& src = inst.operands[0];
+          triton::arch::OperandWrapper& dst = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->extract(7, 0, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "STTRB operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::sttrh_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& src = inst.operands[0];
+          triton::arch::OperandWrapper& dst = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->extract(15, 0, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "STTRH operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::stlur_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& src = inst.operands[0];
+          triton::arch::OperandWrapper& dst = inst.operands[1];
+
+          /* Create the semantics of the STORE */
+          auto node = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "STLUR operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::stlurb_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& src = inst.operands[0];
+          triton::arch::OperandWrapper& dst = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->extract(7, 0, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "STLURB operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::stlurh_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& src = inst.operands[0];
+          triton::arch::OperandWrapper& dst = inst.operands[1];
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node = this->astCtxt->extract(15, 0, op);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "STLURH operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
         void AArch64Semantics::stur_s(triton::arch::Instruction& inst) {
           triton::arch::OperandWrapper& src = inst.operands[0];
           triton::arch::OperandWrapper& dst = inst.operands[1];
@@ -3481,9 +6078,6 @@ namespace triton {
           /* Create the semantics */
           auto node = this->astCtxt->extract(7, 0, op);
 
-          /* Special behavior: Define that the size of the memory access is 8 bits */
-          dst.getMemory().setBits(7, 0);
-
           /* Create symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "STURB operation");
 
@@ -3505,14 +6099,153 @@ namespace triton {
           /* Create the semantics */
           auto node = this->astCtxt->extract(15, 0, op);
 
-          /* Special behavior: Define that the size of the memory access is 16 bits */
-          dst.getMemory().setBits(15, 0);
-
           /* Create symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "STURH operation");
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::stxp_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst1 = inst.operands[0]; /* status */
+          triton::arch::OperandWrapper& src1 = inst.operands[1];
+          triton::arch::OperandWrapper& src2 = inst.operands[2];
+          triton::arch::OperandWrapper& dst2 = inst.operands[3];
+
+          /* Special behavior: Define that the size of the memory access is src1.size + src2.size */
+          dst2.getMemory().setBits((src1.getBitSize() + src2.getBitSize()) - 1, 0);
+
+          /* Is memory exclusive */
+          bool exclusive = this->architecture->isMemoryExclusive(dst2.getConstMemory());
+
+          /* Create symbolic operands */
+          auto op1 = this->symbolicEngine->getOperandAst(inst, src1);
+          auto op2 = this->symbolicEngine->getOperandAst(inst, src2);
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->bv(exclusive ? 0 : 1, dst1.getBitSize());
+          auto node2 = this->astCtxt->concat(op2, op1);
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "STXP operation - write status");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->setTaint(dst1, false);
+
+          /* Exclusive operation */
+          if (exclusive) {
+            auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "STXP operation - STORE access");
+            expr2->isTainted = this->taintEngine->setTaint(dst2, this->taintEngine->isTainted(src1) | this->taintEngine->isTainted(src2));
+          }
+
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(dst2.getConstMemory(), false);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::stxr_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst1 = inst.operands[0]; /* status */
+          triton::arch::OperandWrapper& src  = inst.operands[1];
+          triton::arch::OperandWrapper& dst2 = inst.operands[2];
+
+          /* Is memory exclusive */
+          bool exclusive = this->architecture->isMemoryExclusive(dst2.getConstMemory());
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->bv(exclusive ? 0 : 1, dst1.getBitSize());
+          auto node2 = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "STXR operation - write status");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->setTaint(dst1, false);
+
+          /* Exclusive operation */
+          if (exclusive) {
+            auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "STXR operation - STORE access");
+            expr2->isTainted = this->taintEngine->taintAssignment(dst2, src);
+          }
+
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(dst2.getConstMemory(), false);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::stxrb_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst1 = inst.operands[0]; /* status */
+          triton::arch::OperandWrapper& src  = inst.operands[1];
+          triton::arch::OperandWrapper& dst2 = inst.operands[2];
+
+          /* Is memory exclusive */
+          bool exclusive = this->architecture->isMemoryExclusive(dst2.getConstMemory());
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->bv(exclusive ? 0 : 1, dst1.getBitSize());
+          auto node2 = this->astCtxt->extract(7, 0, op);
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "STXRB operation - write status");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->setTaint(dst1, false);
+
+          /* Exclusive operation */
+          if (exclusive) {
+            auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "STXRB operation - STORE access");
+            expr2->isTainted = this->taintEngine->taintAssignment(dst2, src);
+          }
+
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(dst2.getConstMemory(), false);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::stxrh_s(triton::arch::Instruction& inst) {
+          triton::arch::OperandWrapper& dst1 = inst.operands[0]; /* status */
+          triton::arch::OperandWrapper& src  = inst.operands[1];
+          triton::arch::OperandWrapper& dst2 = inst.operands[2];
+
+          /* Is memory exclusive */
+          bool exclusive = this->architecture->isMemoryExclusive(dst2.getConstMemory());
+
+          /* Create symbolic operands */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+
+          /* Create the semantics */
+          auto node1 = this->astCtxt->bv(exclusive ? 0 : 1, dst1.getBitSize());
+          auto node2 = this->astCtxt->extract(15, 0, op);
+
+          /* Create symbolic expression */
+          auto expr1 = this->symbolicEngine->createSymbolicExpression(inst, node1, dst1, "STXRH operation - write status");
+
+          /* Spread taint */
+          expr1->isTainted = this->taintEngine->setTaint(dst1, false);
+
+          /* Exclusive operation */
+          if (exclusive) {
+            auto expr2 = this->symbolicEngine->createSymbolicExpression(inst, node2, dst2, "STXRH operation - STORE access");
+            expr2->isTainted = this->taintEngine->taintAssignment(dst2, src);
+          }
+
+          /* Update exclusive memory access tag */
+          this->architecture->setMemoryExclusiveTag(dst2.getConstMemory(), false);
 
           /* Update the symbolic control flow */
           this->controlFlow_s(inst);
@@ -3650,6 +6383,13 @@ namespace triton {
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->setTaint(dst, this->taintEngine->isTainted(src1) | this->taintEngine->isTainted(src2));
+
+          /* Set condition flag */
+          if (this->astCtxt->extract(0, 0, this->astCtxt->bvlshr(op1, op2))->evaluate() != 0)
+            inst.setConditionTaken(true);
+
+          /* Create the path constraint */
+          this->symbolicEngine->pushPathConstraint(inst, expr);
         }
 
 
@@ -3679,6 +6419,13 @@ namespace triton {
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->setTaint(dst, this->taintEngine->isTainted(src1) | this->taintEngine->isTainted(src2));
+
+          /* Set condition flag */
+          if (this->astCtxt->extract(0, 0, this->astCtxt->bvlshr(op1, op2))->evaluate() == 0)
+            inst.setConditionTaken(true);
+
+          /* Create the path constraint */
+          this->symbolicEngine->pushPathConstraint(inst, expr);
         }
 
 
@@ -3734,7 +6481,7 @@ namespace triton {
             bits.push_back(this->astCtxt->bv(0, dst.getBitSize() - (lsb + width)));
           }
 
-          bits.push_back(this->astCtxt->extract(width, 0, op));
+          bits.push_back(this->astCtxt->extract(width - 1, 0, op));
 
           if (lsb) {
             bits.push_back(this->astCtxt->bv(0, lsb));
@@ -3838,6 +6585,27 @@ namespace triton {
           this->controlFlow_s(inst);
         }
 
+        void AArch64Semantics::umov_s(triton::arch::Instruction& inst) {
+          auto& dst = inst.operands[0]; // GPR register
+          auto& src = inst.operands[1]; // vector register
+
+          /* Create the semantics */
+          auto vas_size = src.getConstRegister().getVASSize() * triton::bitsize::byte;
+
+          auto node = 
+            this->astCtxt->zx(
+              dst.getBitSize() - vas_size, 
+              this->symbolicEngine->getOperandAst(src)    
+            );
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst);
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          this->controlFlow_s(inst);
+        }
 
         void AArch64Semantics::umnegl_s(triton::arch::Instruction& inst) {
           auto& dst  = inst.operands[0];
@@ -3987,6 +6755,39 @@ namespace triton {
 
           /* Create symbolic expression */
           auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "UXTH operation");
+
+          /* Spread taint */
+          expr->isTainted = this->taintEngine->taintAssignment(dst, src);
+
+          /* Update the symbolic control flow */
+          this->controlFlow_s(inst);
+        }
+
+
+        void AArch64Semantics::xtn_s(triton::arch::Instruction& inst) {
+          auto& dst = inst.operands[0];
+          auto& src = inst.operands[1];
+          triton::uint32 elementSize;
+
+          switch (src.getConstRegister().getVASType()) {
+            case triton::arch::arm::ID_VAS_8H: elementSize = 8;  break;
+            case triton::arch::arm::ID_VAS_4S: elementSize = 16; break;
+            case triton::arch::arm::ID_VAS_2D: elementSize = 32; break;
+            default:
+              this->exception = triton::arch::FAULT_UD;
+              return;
+          }
+
+          /* Keep the low half of each source element. */
+          auto op = this->symbolicEngine->getOperandAst(inst, src);
+          auto node = this->astCtxt->extract(elementSize - 1, 0, op);
+          for (triton::uint32 low = elementSize * 2; low < triton::bitsize::dqword; low += elementSize * 2) {
+            node = this->astCtxt->concat(this->astCtxt->extract(low + elementSize - 1, low, op), node);
+          }
+          node = this->astCtxt->zx(triton::bitsize::qword, node);
+
+          /* Create symbolic expression */
+          auto expr = this->symbolicEngine->createSymbolicExpression(inst, node, dst, "XTN operation");
 
           /* Spread taint */
           expr->isTainted = this->taintEngine->taintAssignment(dst, src);

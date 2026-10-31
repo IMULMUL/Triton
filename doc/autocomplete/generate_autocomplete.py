@@ -1,8 +1,9 @@
 try:
-    from typing import Optional, List, Dict, Tuple
+    from typing import Optional, List, Dict, Tuple, Self
 except ImportError:
     pass
 
+import argparse
 import re
 import os
 
@@ -14,9 +15,9 @@ OBJECT_PREFIX = 'o'
 NAMESPACE_PREFIX = 'n'
 
 list_pattern      = r'\[(.*?)(?:,(?: ?...)?)?\]'
-type_pattern      = r'(?P<type>List\[.*?\]|\w+)'
+type_pattern      = r'(?P<type>List\[.*?\]|[\w\.]+)'
 obj_doc_re        = re.compile(r'-\s<b>(?P<sig>.*?)<\/b><br>\r?\n(?P<desc>.*?)\r?\n\r?\n', flags=re.DOTALL)
-name_doc_pattern  = r'- \*\*{namespace}\.(?P<member>.*?)\*\*'
+name_doc_pattern  = r'- (\*\*|<b>)(?P<member>.*?)(\*\*|</b>)'
 ref_re            = re.compile(r'\\ref\spy_(.*?)_page')
 sig_re            = re.compile(r'(?P<return>{}) (?P<name>\w+)\s?\((?P<args>.*?)\)'.format(type_pattern))
 list_re           = re.compile(list_pattern)
@@ -106,7 +107,7 @@ def gen_module_for_object(classname, input_str):
 
     # find functions
     matches = obj_doc_re.finditer(input_str)
-    funcs = []
+    funcs: Dict[str, Function] = {}
     if not matches:
         return ""
 
@@ -116,52 +117,103 @@ def gen_module_for_object(classname, input_str):
         # print("Signature: {}\nDescription: {}\n".format(fsig, desc))
         func = gen_function(fsig, desc)
         if func:
-            funcs.append(func)
+            # overloaded function name
+            if func.name in funcs:
+                funcs[func.name].add_overload(func)
+                funcs[func.name].doc_str += '\n\n' + desc
+            # unique function name
+            else:
+                funcs[func.name] = func
         else:
             print('... in module {}'.format(classname))
+
+    # special case for TritonContext.registers since is it dynamically
+    # set based on the architecture of the context
+    if classname == 'TritonContext':
+        additional_init = 'self.registers = None # type: Any'
+    else:
+        additional_init = 'pass'
 
     # generate
     autogen_str = '''
 class {classname}:
     def __init__(self, *args, **kargs):
-        self.org = triton.{classname}(*args, **kargs)
+        {additional_init}
 
-    {functions}
-'''.format(classname=classname, functions='\n'.join([str(f) for f in funcs]))
+{functions}
+'''.format(classname=classname,
+           functions='\n'.join([str(f) for f in funcs.values()]),
+           additional_init=additional_init)
 
     return autogen_str
 
 
+class Submodule:
+
+    def __init__(self, name, indentation_level):
+        # type: (Self, str, int) -> None
+        self.name          = name
+        self.indentation_level = indentation_level
+        self.members = []
+
+    def __str__(self):
+        # type: () -> str
+        indent = '    ' * self.indentation_level
+        s = indent + 'class {}(IntEnum):\n'.format(self.name)
+
+        # add one indentation level for the members
+        indent += '    '
+        if len(self.members) == 0:
+            s += indent + 'pass'
+        else:
+            s += '\n'.join((indent + member for member in self.members))
+
+        return s
+
+    def add_member(self, member: str):
+        self.members.append(member)
+
+
 def gen_module_for_namespace(classname, input_str):
     # type: (str, str) -> str
+
     input_str = ref_re.sub(sub_ref, input_str)
 
     # find functions
-    pat = name_doc_pattern.format(namespace=classname)
+    pat = name_doc_pattern
     matches = re.finditer(pat, input_str)
-    members = []
     if not matches:
         return ""
 
-    submodules = set()
+    submodules = {}
+    counter = 1
     for match in matches:
-        member = '    {member} = triton.{namespace}.{member}'.format(member = match.group('member'), namespace=classname)
-        members.append(member)
-        submod = member.split('=')[0].split('.')[:-1]
-        for x in submod:
-            submodules.add('    class %s: pass' % (x.lstrip()))
+        components = match.group('member').split('.')
+        modules = components[:-1]
+        member = components[-1]
+        submodule_path = '.'.join(modules)
 
-    print(submodules)
-    if not members:
-        print("warning: empty namespace {}".format(classname))
-        members.append('    pass')
+        for i in range(len(modules)):
+            submodule = '.'.join(modules[:i+1])
+            if submodule not in submodules:
+                submodules[submodule] = Submodule(modules[i], i)
+
+        if classname == 'SOLVER':
+            if member == 'Z3' and not args.z3_enabled:
+                print('skipping Z3')
+                continue
+            elif member == 'BITWUZLA' and not args.bitwuzla_enabled:
+                print('skipping BITWUZLA')
+                continue
+
+        # don't bother with a type for this since it's usually just enums
+        member_str = '{member} = {counter}'.format(
+                member=member, counter=counter)
+        submodules[submodule_path].add_member(member_str)
+        counter += 1
 
     # generate
-    autogen_str = '''
-class {classname}:
-{submodules}
-{members}
-'''.format(classname=classname, submodules='\n'.join(submodules), members='\n'.join(members))
+    autogen_str = '\n'.join((str(s) for s in submodules.values()))
 
     return autogen_str
 
@@ -181,7 +233,7 @@ def gen_reg_module_str(src_dir):
         x86_regs.append((match.group('name'), match.group('x86') == 'true'))
 
     aarch64_regs = []
-    reg_spec_pattern = r'REG_SPEC(_NO_CAPSTONE)?\((?P<name>.*?),.*?\)'
+    reg_spec_pattern = r'(SYS_)?REG_SPEC(_NO_CAPSTONE)?\((?P<name>.*?),.*?\)'
     for match in re.finditer(reg_spec_pattern, aarch64_reg_data):
         aarch64_regs.append(match.group('name'))
 
@@ -266,16 +318,19 @@ def get_namespaces(namespace_dir):
 
 def gen_init_file(modules):
     # type: (List[str]) -> str
-    mod_str = """
-from typing import List, Union, Callable, Tuple
-import triton
+    global args
+    mod_str = """from typing import List, Union, Callable, Tuple, Any
+from typing_extensions import Self
+from enum import IntEnum
+{z3}
 
 {modules}
 
 raise ImportError
-""".format(modules='\n\n'.join(modules))
+""".format(z3='import z3\n' if args.z3_enabled else '', modules='\n\n'.join(modules))
     return mod_str
 
+args = None
 
 def main():
     this_dir = os.path.dirname(__file__)
@@ -283,7 +338,21 @@ def main():
     namespace_dir = os.path.join(src_dir, 'libtriton/bindings/python/namespaces')
     object_dir = os.path.join(src_dir, 'libtriton/bindings/python/objects')
 
-    out_dir = os.path.join(this_dir if len(os.sys.argv) < 2 else os.sys.argv[1], 'triton_autocomplete')
+    argp = argparse.ArgumentParser(prog='generate_autocomplete.py',
+                                   description='Generates an autocomplete module for IDEs to use.')
+    argp.add_argument('--basedir', default=this_dir, help='In what directory the submodule should be generated')
+    argp.add_argument('--bitwuzla', action='store_true', dest='bitwuzla_enabled', help='Enable bitwuzla support')
+    argp.add_argument('--z3', action='store_true', dest='z3_enabled', help='Enable Z3 support')
+
+    global args
+    args = argp.parse_args()
+
+    if(not args.bitwuzla_enabled):
+        print("Generating without bitwuzla")
+    if(not args.z3_enabled):
+        print("Generating without Z3")
+
+    out_dir = os.path.join(args.basedir, 'triton_autocomplete')
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
 
@@ -321,7 +390,7 @@ def main():
 
     # generate and create final __init__ file
     init_str = gen_init_file(modules)
-    with open(os.path.join(out_dir, '__init__.py'), 'w') as f:
+    with open(os.path.join(out_dir, 'triton.pyi'), 'w') as f:
         f.write(init_str)
 
     print('autocomplete generation done')

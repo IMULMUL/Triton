@@ -145,10 +145,10 @@ def libcMainHandler(ctx):
 
 # Functions to emulate
 customRelocation = [
-    ('printf',            printfHandler,   BASE_PLT + 0),
-    ('puts',              putsHandler,     BASE_PLT + 1),
-    ('__libc_start_main', libcMainHandler, BASE_PLT + 2),
-    ('abort',             abortHandler,    BASE_PLT + 4),
+    ('printf',            printfHandler,   BASE_PLT + 0 << 2),
+    ('puts',              putsHandler,     BASE_PLT + 1 << 2),
+    ('__libc_start_main', libcMainHandler, BASE_PLT + 2 << 2),
+    ('abort',             abortHandler,    BASE_PLT + 4 << 2),
 ]
 
 
@@ -196,7 +196,7 @@ def emulate(ctx, pc):
         instruction.setAddress(pc)
 
         # Process
-        if ctx.processing(instruction) == False:
+        if ctx.processing(instruction) == EXCEPTION.FAULT_UD:
             opcodes_str = " ".join(["{:02x}".format(ord(b)) for b in instruction.getOpcode()])
             debug('[-] Instruction not supported: %s\t%s' %(opcodes_str, str(instruction)))
             break
@@ -272,7 +272,7 @@ def loadBinary(ctx, binary):
         size   = phdr.physical_size
         vaddr  = phdr.virtual_address
         debug('[+] Loading 0x%06x - 0x%06x' %(vaddr, vaddr+size))
-        ctx.setConcreteMemoryAreaValue(vaddr, phdr.content)
+        ctx.setConcreteMemoryAreaValue(vaddr, list(phdr.content))
     return
 
 

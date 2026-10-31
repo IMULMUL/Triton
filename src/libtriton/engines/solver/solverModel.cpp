@@ -48,6 +48,11 @@ namespace triton {
       }
 
 
+      triton::uint32 SolverModel::getSize(void) const {
+        return this->variable->getSize();
+      }
+
+
       const triton::engines::symbolic::SharedSymbolicVariable& SolverModel::getVariable(void) const {
         return this->variable;
       }
@@ -56,6 +61,11 @@ namespace triton {
       SolverModel& SolverModel::operator=(const SolverModel& other) {
         this->copy(other);
         return *this;
+      }
+
+
+      bool SolverModel::operator==(const SolverModel& other) const {
+        return (this->value == other.value && this->variable->getId() == other.variable->getId());
       }
 
 

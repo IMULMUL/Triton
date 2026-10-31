@@ -8,6 +8,7 @@
 #ifndef TRITON_X86SEMANTICS_H
 #define TRITON_X86SEMANTICS_H
 
+#include <triton/archEnums.hpp>
 #include <triton/architecture.hpp>
 #include <triton/dllexport.hpp>
 #include <triton/instruction.hpp>
@@ -60,6 +61,9 @@ namespace triton {
           //! The AST Context API
           triton::ast::SharedAstContext astCtxt;
 
+          //! Exception status
+          triton::arch::exception_e exception;
+
         public:
           //! Constructor.
           TRITON_EXPORT x86Semantics(triton::arch::Architecture* architecture,
@@ -68,8 +72,8 @@ namespace triton {
                                      const triton::modes::SharedModes& modes,
                                      const triton::ast::SharedAstContext& astCtxt);
 
-          //! Builds the semantics of the instruction. Returns true if the instruction is supported.
-          TRITON_EXPORT bool buildSemantics(triton::arch::Instruction& inst);
+          //! Builds the semantics of the instruction. Returns `triton::arch::NO_FAULT` if succeed.
+          TRITON_EXPORT triton::arch::exception_e buildSemantics(triton::arch::Instruction& inst);
 
         private:
           //! Aligns the stack (add). Returns the new stack value.
@@ -89,6 +93,9 @@ namespace triton {
 
           //! Control flow semantics. Used to represent IP.
           void controlFlow_s(triton::arch::Instruction& inst);
+
+          //! Update the FPU x87 Tag Word (whenever an MMX register changes)
+          void updateFTW(triton::arch::Instruction& inst, const triton::engines::symbolic::SharedSymbolicExpression& parent);
 
           //! The AF semantics.
           void af_s(triton::arch::Instruction& inst,
@@ -457,6 +464,9 @@ namespace triton {
           //! The ADD semantics.
           void add_s(triton::arch::Instruction& inst);
 
+          //! The ADOX semantics.
+          void adox_s(triton::arch::Instruction& inst);
+
           //! The AND semantics.
           void and_s(triton::arch::Instruction& inst);
 
@@ -507,6 +517,9 @@ namespace triton {
 
           //! The BTS semantics.
           void bts_s(triton::arch::Instruction& inst);
+
+          //! The BZHI semantics.
+          void bzhi_s(triton::arch::Instruction& inst);
 
           //! The CALL semantics.
           void call_s(triton::arch::Instruction& inst);
@@ -637,6 +650,18 @@ namespace triton {
           //! The EXTRACTPS semantics.
           void extractps_s(triton::arch::Instruction& inst);
 
+          //! The FXRSTOR semantics.
+          void fxrstor_s(triton::arch::Instruction& inst);
+
+          //! The FXRSTOR64 semantics.
+          void fxrstor64_s(triton::arch::Instruction& inst);
+
+          //! The FXSAVE semantics.
+          void fxsave_s(triton::arch::Instruction& inst);
+
+          //! The FXSAVE64 semantics.
+          void fxsave64_s(triton::arch::Instruction& inst);
+
           //! The IDIV semantics.
           void idiv_s(triton::arch::Instruction& inst);
 
@@ -747,6 +772,9 @@ namespace triton {
 
           //! The LZCNT semantics.
           void lzcnt_s(triton::arch::Instruction& inst);
+
+          //! The INT3 semantics.
+          void int3_s(triton::arch::Instruction& inst);
 
           //! The MFENCE semantics.
           void mfence_s(triton::arch::Instruction& inst);
@@ -889,6 +917,12 @@ namespace triton {
           //! The PACKUSWB semantics.
           void packuswb_s(triton::arch::Instruction& inst);
 
+          //! The PACKSSDW semantics.
+          void packssdw_s(triton::arch::Instruction& inst);
+
+          //! The PACKSSWB semantics.
+          void packsswb_s(triton::arch::Instruction& inst);
+
           //! The PADDB semantics.
           void paddb_s(triton::arch::Instruction& inst);
 
@@ -937,6 +971,12 @@ namespace triton {
           //! The PCMPGTW semantics.
           void pcmpgtw_s(triton::arch::Instruction& inst);
 
+          //! The PDEP semantics.
+          void pdep_s(triton::arch::Instruction& inst);
+
+          //! The PEXT semantics.
+          void pext_s(triton::arch::Instruction& inst);
+
           //! The PEXTRB semantics.
           void pextrb_s(triton::arch::Instruction& inst);
 
@@ -960,6 +1000,9 @@ namespace triton {
 
           //! The PINSRW semantics.
           void pinsrw_s(triton::arch::Instruction& inst);
+
+          //! The PMADDWD semantics.
+          void pmaddwd_s(triton::arch::Instruction& inst);
 
           //! The PMAXSB semantics.
           void pmaxsb_s(triton::arch::Instruction& inst);
@@ -1036,6 +1079,21 @@ namespace triton {
           //! The PMOVZXWQ semantics.
           void pmovzxwq_s(triton::arch::Instruction& inst);
 
+          //! The PMULHW semantics.
+          void pmulhw_s(triton::arch::Instruction& inst);
+
+          //! The PMULLD semantics.
+          void pmulld_s(triton::arch::Instruction& inst);
+
+          //! The PMULLW semantics.
+          void pmullw_s(triton::arch::Instruction& inst);
+
+          //! The PMULUDQ semantics.
+          void pmuludq_s(triton::arch::Instruction& inst);
+
+          //! The POPCNT semantics.
+          void popcnt_s(triton::arch::Instruction& inst);
+
           //! The POP semantics.
           void pop_s(triton::arch::Instruction& inst);
 
@@ -1056,6 +1114,9 @@ namespace triton {
 
           //! The PREFETCHx semantics.
           void prefetchx_s(triton::arch::Instruction& inst);
+
+          //! The PSHUFB semantics.
+          void pshufb_s(triton::arch::Instruction& inst);
 
           //! The PSHUFD semantics.
           void pshufd_s(triton::arch::Instruction& inst);
@@ -1081,8 +1142,23 @@ namespace triton {
           //! The PSLLW semantics.
           void psllw_s(triton::arch::Instruction& inst);
 
+          //! The PSRAD semantics.
+          void psrad_s(triton::arch::Instruction& inst);
+
+          //! The PSRAW semantics.
+          void psraw_s(triton::arch::Instruction& inst);
+
+          //! The PSRLD semantics.
+          void psrld_s(triton::arch::Instruction& inst);
+
           //! The PSRLDQ semantics.
           void psrldq_s(triton::arch::Instruction& inst);
+
+          //! The PSRLQ semantics.
+          void psrlq_s(triton::arch::Instruction& inst);
+
+          //! The PSRLW semantics.
+          void psrlw_s(triton::arch::Instruction& inst);
 
           //! The PSUBB semantics.
           void psubb_s(triton::arch::Instruction& inst);
@@ -1303,6 +1379,15 @@ namespace triton {
           //! The UNPCKLPS semantics.
           void unpcklps_s(triton::arch::Instruction& inst);
 
+          //! The VERR semantics.
+          void verr_s(triton::arch::Instruction& inst);
+
+          //! The VERW semantics.
+          void verw_s(triton::arch::Instruction& inst);
+
+          //! The VEXTRACTI128 semantics.
+          void vextracti128_s(triton::arch::Instruction& inst);
+
           //! The VMOVD semantics.
           void vmovd_s(triton::arch::Instruction& inst);
 
@@ -1311,6 +1396,9 @@ namespace triton {
 
           //! The VMOVDQU semantics.
           void vmovdqu_s(triton::arch::Instruction& inst);
+
+          //! The VMOVNTDQ semantics.
+          void vmovntdq_s(triton::arch::Instruction& inst);
 
           //! The VMOVQ semantics.
           void vmovq_s(triton::arch::Instruction& inst);
@@ -1323,6 +1411,24 @@ namespace triton {
 
           //! The VMOVUPS semantics.
           void vmovups_s(triton::arch::Instruction& inst);
+
+          //! The VPACKUSWB semantics.
+          void vpackuswb_s(triton::arch::Instruction& inst);
+
+          //! The VPACKSSDW semantics.
+          void vpackssdw_s(triton::arch::Instruction& inst);
+
+          //! The VPACKSSWB semantics.
+          void vpacksswb_s(triton::arch::Instruction& inst);
+
+          //! The VPADDB semantics.
+          void vpaddb_s(triton::arch::Instruction& inst);
+
+          //! The VPADDD semantics.
+          void vpaddd_s(triton::arch::Instruction& inst);
+
+          //! The VPADDW semantics.
+          void vpaddw_s(triton::arch::Instruction& inst);
 
           //! The VPAND semantics.
           void vpand_s(triton::arch::Instruction& inst);
@@ -1351,14 +1457,29 @@ namespace triton {
           //! The VPCMPGTW semantics.
           void vpcmpgtw_s(triton::arch::Instruction& inst);
 
+          //! The VPMADDWD semantics.
+          void vpmaddwd_s(triton::arch::Instruction& inst);
+
           //! The VPMOVMSKB semantics.
           void vpmovmskb_s(triton::arch::Instruction& inst);
 
           //! The VPMINUB semantics.
           void vpminub_s(triton::arch::Instruction& inst);
 
+          //! The VPMULHW semantics.
+          void vpmulhw_s(triton::arch::Instruction& inst);
+
+          //! The VPMULLW semantics.
+          void vpmullw_s(triton::arch::Instruction& inst);
+
           //! The VPANDN semantics.
           void vpandn_s(triton::arch::Instruction& inst);
+
+          //! The VPERM2I128 semantics.
+          void vperm2i128_s(triton::arch::Instruction& inst);
+
+          //! The VPERMQ semantics.
+          void vpermq_s(triton::arch::Instruction& inst);
 
           //! The VPEXTRB semantics.
           void vpextrb_s(triton::arch::Instruction& inst);
@@ -1378,8 +1499,26 @@ namespace triton {
           //! The VPSHUFD semantics.
           void vpshufd_s(triton::arch::Instruction& inst);
 
+          //! The VPSIGNW semantics.
+          void vpsignw_s(triton::arch::Instruction& inst);
+
           //! The VPSLLDQ semantics.
           void vpslldq_s(triton::arch::Instruction& inst);
+
+          //! The VPSLLW semantics.
+          void vpsllw_s(triton::arch::Instruction& inst);
+
+          //! The VPSRAD semantics.
+          void vpsrad_s(triton::arch::Instruction& inst);
+
+          //! The VPSRAW semantics.
+          void vpsraw_s(triton::arch::Instruction& inst);
+
+          //! The VPSRLDQ semantics.
+          void vpsrldq_s(triton::arch::Instruction& inst);
+
+          //! The VPSRLW semantics.
+          void vpsrlw_s(triton::arch::Instruction& inst);
 
           //! The VPSUBB semantics.
           void vpsubb_s(triton::arch::Instruction& inst);
@@ -1395,6 +1534,30 @@ namespace triton {
 
           //! The VPTEST semantics.
           void vptest_s(triton::arch::Instruction& inst);
+
+          //! The VPUNPCKHBW semantics.
+          void vpunpckhbw_s(triton::arch::Instruction& inst);
+
+          //! The VPUNPCKHDQ semantics.
+          void vpunpckhdq_s(triton::arch::Instruction& inst);
+
+          //! The VPUNPCKHQDQ semantics.
+          void vpunpckhqdq_s(triton::arch::Instruction& inst);
+
+          //! The VPUNPCKHWD semantics.
+          void vpunpckhwd_s(triton::arch::Instruction& inst);
+
+          //! The VPUNPCKLBW semantics.
+          void vpunpcklbw_s(triton::arch::Instruction& inst);
+
+          //! The VPUNPCKLDQ semantics.
+          void vpunpckldq_s(triton::arch::Instruction& inst);
+
+          //! The VPUNPCKLQDQ semantics.
+          void vpunpcklqdq_s(triton::arch::Instruction& inst);
+
+          //! The VPUNPCKLWD semantics.
+          void vpunpcklwd_s(triton::arch::Instruction& inst);
 
           //! The VPXOR semantics.
           void vpxor_s(triton::arch::Instruction& inst);

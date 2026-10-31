@@ -3,7 +3,7 @@
 """Issue from Github."""
 
 import unittest
-
+import os
 from triton import *
 
 
@@ -41,11 +41,12 @@ class TestIssue656(unittest.TestCase):
 
     def test_issue(self):
         e = self.sym_exec_gadget((b'\x89\xd8', b'\xc2\x04\x00'))
-        self.assertEqual(str(e), '(define-fun ref!15 () (_ BitVec 64) ((_ zero_extend 32) ((_ extract 31 0) ref!1))) ; MOV operation - 0x0: mov eax, ebx')
+        self.assertEqual(str(e), '(define-fun ref!15 () (_ BitVec 64) ((_ zero_extend 32) ((_ extract 31 0) ref!1))) ; MOV operation')
         a = e.getAst()
         self.assertEqual(str(a + 1), '(bvadd ((_ zero_extend 32) ((_ extract 31 0) ref!1)) (_ bv1 64))')
         self.assertEqual(str(1 + a), '(bvadd (_ bv1 64) ((_ zero_extend 32) ((_ extract 31 0) ref!1)))')
-        self.assertEqual(str(e.getComment()), 'MOV operation - 0x0: mov eax, ebx')
+        self.assertEqual(str(e.getComment()), 'MOV operation')
+        self.assertEqual(str(e.getDisassembly()), '0x0: mov eax, ebx')
         self.assertEqual(e.getId(), 15)
         self.assertEqual(str(e.getAst()), str(e.getNewAst()))
         self.assertEqual(str(e.getOrigin()), 'rax:64 bv[63..0]')
@@ -344,10 +345,10 @@ class TestIssue818(unittest.TestCase):
         self.ctx.processing(inst)
 
         ref1 = self.ctx.getSymbolicExpression(2) # res of 'inc rax'
-        m, status = self.ctx.getModel(ref1.getAst() == 0xdead, status=True)
+        m, status, time = self.ctx.getModel(ref1.getAst() == 0xdead, status=True)
         self.assertEqual(m[0].getValue(), 0xac)
         self.assertEqual(m[1].getValue(), 0xde)
-        self.assertEqual(status, SOLVER.SAT)
+        self.assertEqual(status, SOLVER_STATE.SAT)
 
 
 class TestIssue823(unittest.TestCase):
@@ -410,6 +411,11 @@ class TestIssue860(unittest.TestCase):
     def setUp(self):
         self.ctx = TritonContext(ARCH.X86_64)
         self.ast = self.ctx.getAstContext()
+
+        # NOTE The FORALL node is not supported currently in Bitwuzla. Remove
+        #      this check once it is supported.
+        if 'BITWUZLA' in dir(SOLVER) and self.ctx.getSolver() == SOLVER.BITWUZLA:
+            self.skipTest('Skipping due to Bitwuzla issue (FORALL node not supported, see #1062)')
 
     def test_issue(self):
         x = self.ast.variable(self.ctx.newSymbolicVariable(32))
@@ -502,3 +508,209 @@ class TestIssue1029(unittest.TestCase):
 
     def test_issue(self):
         self.ctx.processing(Instruction(b"\x00#")) # movs r3, #0
+
+
+class TestIssue1131(unittest.TestCase):
+    """Testing #1131."""
+
+    def setUp(self):
+        self.ctx = TritonContext(ARCH.X86_64)
+        self.ctx.setConcreteRegisterValue(self.ctx.registers.rdi, 0xdeadbeefcafebabe)
+
+    def test_issue(self):
+        self.ctx.processing(Instruction(b"\x66\x0f\xcf")) # bswap di
+        self.assertEqual(self.ctx.getConcreteRegisterValue(self.ctx.registers.rdi), 0xdeadbeefcafe0000)
+
+
+class TestIssue1131Regression(unittest.TestCase):
+    """Testing #1131 regression."""
+
+    def setUp(self):
+        self.ctx = TritonContext(ARCH.X86_64)
+        self.ctx.setConcreteRegisterValue(self.ctx.registers.r8d, 0xcafebabe)
+
+    def test_issue(self):
+        self.ctx.processing(Instruction(b"\x41\x0f\xc8")) # bswap r8d
+        self.assertEqual(self.ctx.getConcreteRegisterValue(self.ctx.registers.r8d), 0xbebafeca)
+
+
+class TestIssue872(unittest.TestCase):
+    """Testing #872."""
+
+    def setUp(self):
+        self.ctx = TritonContext(ARCH.X86_64)
+        self.code = [
+          (b"\xB8\x05\x00\x00\x00", EXCEPTION.NO_FAULT),  # mov eax, 5
+          (b"\xBA\x00\x00\x00\x00", EXCEPTION.NO_FAULT),  # mov edx, 0
+          (b"\xF7\xF2",             EXCEPTION.FAULT_DE)   # div edx
+        ]
+
+    def test_1(self):
+        for op in self.code:
+            ret = self.ctx.processing(Instruction(op[0]))
+            self.assertEqual(ret, op[1])
+
+    def test_2(self):
+        ret = self.ctx.processing(Instruction(b"\xCC")) # int3
+        self.assertEqual(ret, EXCEPTION.FAULT_BP)
+
+
+class TestIssue1187(unittest.TestCase):
+    """Testing #1187."""
+
+    def setUp(self):
+        self.ctx = TritonContext(ARCH.X86)
+        self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, True)
+        self.ctx.setConcreteRegisterValue(self.ctx.registers.esp, 0x1000)
+        self.ctx.setConcreteRegisterValue(self.ctx.registers.ebp, 0xabcd)
+        self.ctx.addCallback(CALLBACK.GET_CONCRETE_MEMORY_VALUE, self.mem_read_cb)
+        self.count = 0
+
+    def mem_read_cb(self, ctx, mem):
+        self.count += 1
+
+    def test_1(self):
+        self.ctx.setMode(MODE.MEMORY_ARRAY, True)
+
+        inst = Instruction(0, b'\x55') # push ebp
+        self.ctx.processing(inst)
+
+        # Processing must not call callback
+        self.assertEqual(self.count, 0)
+
+    def test_2(self):
+        self.ctx.setMode(MODE.MEMORY_ARRAY, False)
+
+        inst = Instruction(0, b'\x55') # push ebp
+        self.ctx.processing(inst)
+
+        # Processing must not call callback
+        self.assertEqual(self.count, 0)
+
+
+class TestIssue1193(unittest.TestCase):
+    """Testing #1193."""
+
+    def test_1(self):
+        ctx = TritonContext(ARCH.AARCH64)
+        ctx.setMode(MODE.ALIGNED_MEMORY, True)
+
+        # setup memory
+        ctx.setConcreteMemoryAreaValue(0x129098, 0xF69078DEB08D5F08.to_bytes(length=8, byteorder='little'))
+        ctx.setConcreteMemoryAreaValue(0x1290a0, 0x939027DCB2D0494B.to_bytes(length=8, byteorder='little'))
+        ctx.setConcreteMemoryAreaValue(0x1290a8, b"\x01")
+        ctx.setConcreteMemoryAreaValue(0x0a7090, b"\x27\x2f\xff\xdf\xbd\x57\xe3\x93\x27\x2f\xff\xdf\xbd\x57\xe3\x93")
+
+        setup = [
+            (0x40918, b"\x40\x07\x00\xB0"),   # adrp x0, #0x129000
+            (0x4091C, b"\x00\x60\x02\x91"),   # add  x0, x0, #0x98
+        ]
+        for pc, op in setup:
+            inst = Instruction(pc, op)
+            ctx.processing(inst)
+
+        code = [
+            b"\x08\x40\x40\x39",# LDRB      W8, [X0,#0x10]
+            b"\xe8\x00\x00\x34",# CBZ       W8, locret_4840C
+            b"\xE8\x02\x00\xF0",# ADRP      X8, #xmmword_A7090@PAGE
+            b"\x00\x00\xC0\x3D",# LDR       Q0, [X0]
+            b"\x01\x25\xC0\x3D",# LDR       Q1, [X8,#xmmword_A7090@PAGEOFF]
+            b"\x1F\x40\x00\x39",# STRB      WZR, [X0,#0x10]
+            b"\x00\x1C\x21\x6E",# EOR       V0.16B, V0.16B, V1.16B
+            b"\x00\x00\x80\x3D",# STR       Q0, [X0]
+        ]
+
+        pc = 0x483ec
+        for op in code:
+            inst = Instruction(pc, op)
+            ctx.processing(inst)
+            pc = ctx.getConcreteRegisterValue(ctx.registers.pc)
+
+        self.assertEqual(ctx.getConcreteMemoryAreaValue(0x1290a8, 1), b'\x00')
+        self.assertEqual(ctx.getConcreteMemoryAreaValue(0x129098, 16), b'/proc/self/maps\x00')
+
+
+class TestIssue1265(unittest.TestCase):
+    """Testing #1265."""
+
+    def setUp(self):
+        self.ctx = TritonContext(ARCH.AARCH64)
+        self.ctx.setConcreteMemoryValue(MemoryAccess(0x122fff00, 8), 0x1122334455667788)
+
+    def test_1(self):
+        inst = Instruction(0x12300000, b'\x00\xf8\xff\x58') # ldr x0, #-256
+        self.ctx.processing(inst)
+        x0 = self.ctx.getConcreteRegisterValue(self.ctx.registers.x0)
+        self.assertEqual(x0, 0x1122334455667788)
+
+    def test_2(self):
+        inst = Instruction(0x12300000, b'\x00\xf8\xff\x18') # ldr w0, #-256
+        self.ctx.processing(inst)
+        x0 = self.ctx.getConcreteRegisterValue(self.ctx.registers.x0)
+        self.assertEqual(x0, 0x55667788)
+
+
+class TestIssue1310(unittest.TestCase):
+    """Testing #1310."""
+
+    def setUp(self):
+        self.ctx = TritonContext(ARCH.AARCH64)
+        self.ctx.setConcreteMemoryAreaValue(0x400000+0x30, b'\x72\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+
+    def test_1(self):
+        inst = Instruction(0x400000, b'\x91\x01\x00\x98') # ldrsw x17, #0x30
+        self.ctx.processing(inst)
+        x17 = self.ctx.getConcreteRegisterValue(self.ctx.registers.x17)
+        self.assertEqual(x17, 0x72)
+
+
+# FIXME: Add Appveyor when we will move to Capstone 5 as min version
+class TestIssue1195(unittest.TestCase):
+    """Testing #1195."""
+
+    def test_1(self):
+        if ('APPVEYOR' in os.environ):
+            pass
+        else:
+            ctx = TritonContext(ARCH.AARCH64)
+
+            ctx.setConcreteRegisterValue(ctx.registers.x20, 0)
+            ctx.setConcreteRegisterValue(ctx.registers.tpidr_el0, 0x1122334455667788)
+
+            self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.tpidr_el0), 0x1122334455667788)
+            self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.x20), 0)
+
+            ctx.processing(Instruction(b"\x54\xD0\x3B\xD5")) # mrs x20, tpidr_el0
+
+            self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.tpidr_el0), 0x1122334455667788)
+            self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.x20), 0x1122334455667788)
+
+    def test_2(self):
+        if ('APPVEYOR' in os.environ):
+            pass
+        else:
+            ctx = TritonContext(ARCH.AARCH64)
+
+            ctx.setConcreteRegisterValue(ctx.registers.x20, 0x1122334455667788)
+            ctx.setConcreteRegisterValue(ctx.registers.tpidr_el0, 0)
+
+            self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.tpidr_el0), 0)
+            self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.x20), 0x1122334455667788)
+
+            ctx.processing(Instruction(b"\x54\xd0\x1b\xd5")) #  msr tpidr_el0, x20
+
+            self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.tpidr_el0), 0x1122334455667788)
+            self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.x20), 0x1122334455667788)
+
+
+class TestIssue1035(unittest.TestCase):
+    def setup_callback(self, ctx):
+        def getMem(triton_ctx, memacc):
+            self.x = 1234
+        ctx.addCallback(CALLBACK.GET_CONCRETE_MEMORY_VALUE, getMem)
+
+    def test_1(self):
+        ctx = TritonContext(ARCH.X86_64)
+        self.setup_callback(ctx)
+        ctx.getConcreteMemoryAreaValue(0x1000, 0x1)
+        self.assertEqual(self.x, 1234)

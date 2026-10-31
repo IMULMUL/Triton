@@ -86,8 +86,14 @@ namespace triton {
         //! Garbage unused nodes.
         TRITON_EXPORT void garbage(void);
 
+        //! AST C++ API - array node builder
+        TRITON_EXPORT SharedAbstractNode array(triton::uint32 addrSize);
+
         //! AST C++ API - assert node builder
         TRITON_EXPORT SharedAbstractNode assert_(const SharedAbstractNode& expr);
+
+        //! AST C++ API - bswap node builder
+        TRITON_EXPORT SharedAbstractNode bswap(const SharedAbstractNode& expr);
 
         //! AST C++ API - bv node builder
         TRITON_EXPORT SharedAbstractNode bv(const triton::uint512& value, triton::uint32 size);
@@ -205,6 +211,12 @@ namespace triton {
 
         //! AST C++ API - concat node builder
         template <typename T> SharedAbstractNode concat(const T& exprs) {
+          /* Do not concat if there is only one element */
+          if (exprs.size() == 1) {
+            return exprs.front();
+          }
+
+          /* Allocate node */
           SharedAbstractNode node = std::make_shared<ConcatNode>(exprs, this->shared_from_this());
           if (node == nullptr)
             throw triton::exceptions::Ast("Node builders - Not enough memory");
@@ -302,6 +314,18 @@ namespace triton {
         //! AST C++ API - reference node builder
         TRITON_EXPORT SharedAbstractNode reference(const triton::engines::symbolic::SharedSymbolicExpression& expr);
 
+        //! AST C++ API - select node builder
+        TRITON_EXPORT SharedAbstractNode select(const SharedAbstractNode& array, triton::usize index);
+
+        //! AST C++ API - select node builder
+        TRITON_EXPORT SharedAbstractNode select(const SharedAbstractNode& array, const SharedAbstractNode& index);
+
+        //! AST C++ API - store node builder
+        TRITON_EXPORT SharedAbstractNode store(const SharedAbstractNode& array, triton::usize index, const SharedAbstractNode& expr);
+
+        //! AST C++ API - store node builder
+        TRITON_EXPORT SharedAbstractNode store(const SharedAbstractNode& array, const SharedAbstractNode& index, const SharedAbstractNode& expr);
+
         //! AST C++ API - string node builder
         TRITON_EXPORT SharedAbstractNode string(std::string value);
 
@@ -321,18 +345,21 @@ namespace triton {
         TRITON_EXPORT void updateVariable(const std::string& name, const triton::uint512& value);
 
         //! Gets a variable node from its name.
-        SharedAbstractNode getVariableNode(const std::string& name);
+        TRITON_EXPORT SharedAbstractNode getVariableNode(const std::string& name);
+
+        //! Returns the address space used for the ABV logic.
+        TRITON_EXPORT triton::uint16 getArraySize(void) const;
 
         //! Gets a variable value from its name.
         TRITON_EXPORT const triton::uint512& getVariableValue(const std::string& name) const;
 
         //! Sets the representation mode for this astContext
-        TRITON_EXPORT void setRepresentationMode(triton::uint32 mode);
+        TRITON_EXPORT void setRepresentationMode(triton::ast::representations::mode_e mode);
 
         //! Gets the representations mode of this astContext
-        TRITON_EXPORT triton::uint32 getRepresentationMode(void) const;
+        TRITON_EXPORT triton::ast::representations::mode_e getRepresentationMode(void) const;
 
-        //! Prints the given node with this context representation
+        //! Prints the node according to the current representation mode.
         TRITON_EXPORT std::ostream& print(std::ostream& stream, AbstractNode* node);
     };
 

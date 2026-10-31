@@ -59,7 +59,7 @@ class TestIR(unittest.TestCase):
             instruction.setAddress(pc)
 
             # Process
-            self.assertTrue(self.ctx.processing(instruction))
+            self.assertTrue(self.ctx.processing(instruction) == EXCEPTION.NO_FAULT)
 
             # Next
             pc = self.ctx.getConcreteRegisterValue(self.ctx.registers.rip)
@@ -75,7 +75,7 @@ class TestIR(unittest.TestCase):
         for phdr in phdrs:
             size   = phdr.physical_size
             vaddr  = phdr.virtual_address
-            self.ctx.setConcreteMemoryAreaValue(vaddr, phdr.content)
+            self.ctx.setConcreteMemoryAreaValue(vaddr, list(phdr.content))
 
     def test_ir(self):
         """Load binary, setup environment and emulate the ir test suite."""
@@ -211,7 +211,7 @@ class TestIRQemu(unittest.TestCase):
             if instruction.getType() == OPCODE.X86.HLT:
                 break
 
-            self.assertTrue(ret)
+            self.assertTrue(ret == EXCEPTION.NO_FAULT)
             self.assertTrue(checkAstIntegrity(instruction))
 
             # Simulate routines
@@ -252,7 +252,7 @@ class TestIRQemu(unittest.TestCase):
         for phdr in phdrs:
             size   = phdr.physical_size
             vaddr  = phdr.virtual_address
-            self.ctx.setConcreteMemoryAreaValue(vaddr, phdr.content)
+            self.ctx.setConcreteMemoryAreaValue(vaddr, list(phdr.content))
         return binary
 
     def make_relocation(self, binary):
@@ -417,6 +417,29 @@ class TestCustomIR(unittest.TestCase):
                 found = True
         self.assertTrue(found)
 
+    def test_blr1_aarch64(self):
+        ctx = TritonContext(ARCH.AARCH64)
+        ctx.setConcreteRegisterValue(ctx.registers.pc, 0x1000)
+        ctx.setConcreteRegisterValue(ctx.registers.x1, 0xaaaa)
+        ctx.processing(Instruction(b"\x20\x00\x3f\xd6")) # blr x1p
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.pc), 0xaaaa)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.x30), 0x1004)
+
+    def test_brk1_aarch64(self):
+        ctx = TritonContext(ARCH.AARCH64)
+        ret = ctx.processing(Instruction(b"\x20\x00\x20\xd4")) # brk 1
+        self.assertEqual(ret, EXCEPTION.FAULT_BP)
+
+    def test_movn_aarch64(self):
+        ctx = TritonContext(ARCH.AARCH64)
+        ctx.processing(Instruction(b"\x41\x01\x80\x92")) # movn x1, #10
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.x1), 0xfffffffffffffff5)
+
+    def test_movz_aarch64(self):
+        ctx = TritonContext(ARCH.AARCH64)
+        ctx.processing(Instruction(b"\x41\x01\x80\xd2")) # movz x1, #10
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.x1), 0xa)
+
     def test_ldr2_aarch64(self):
         ctx = TritonContext()
         ctx.setArchitecture(ARCH.AARCH64)
@@ -453,3 +476,174 @@ class TestCustomIR(unittest.TestCase):
             if m.getBaseRegister().getName() == 'x1':
                 found = True
         self.assertTrue(found)
+
+    def test_rcpc_loads_aarch64(self):
+        ctx = TritonContext(ARCH.AARCH64)
+
+        ctx.setConcreteRegisterValue(ctx.registers.x1, 0x1000)
+        ctx.setConcreteMemoryAreaValue(0x1000, b"\x11\x22\x33\x44\x55\x66\x77\x88")
+
+        ctx.processing(Instruction(b"\x25\xc0\xbf\xf8")) # ldapr x5, [x1]
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.x5), 0x8877665544332211)
+
+        ctx.processing(Instruction(b"\x25\xc0\xbf\x38")) # ldaprb w5, [x1]
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.w5), 0x11)
+
+        ctx.processing(Instruction(b"\x25\xc0\xbf\x78")) # ldaprh w5, [x1]
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.w5), 0x2211)
+
+        ctx.processing(Instruction(b"\x25\x00\x40\xd9")) # ldapur x5, [x1]
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.x5), 0x8877665544332211)
+
+        ctx.processing(Instruction(b"\x25\x00\x40\x19")) # ldapurb w5, [x1]
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.w5), 0x11)
+
+        ctx.processing(Instruction(b"\x25\x00\x40\x59")) # ldapurh w5, [x1]
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.w5), 0x2211)
+
+        ctx.setConcreteRegisterValue(ctx.registers.x1, 0x1100)
+        ctx.setConcreteMemoryAreaValue(0x1100, b"\x80")
+        ctx.processing(Instruction(b"\x25\x00\xc0\x19")) # ldapursb w5, [x1]
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.w5), 0xffffff80)
+
+        ctx.setConcreteRegisterValue(ctx.registers.x1, 0x1110)
+        ctx.setConcreteMemoryAreaValue(0x1110, b"\x01\x80")
+        ctx.processing(Instruction(b"\x25\x00\xc0\x59")) # ldapursh w5, [x1]
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.w5), 0xffff8001)
+
+        ctx.setConcreteRegisterValue(ctx.registers.x1, 0x1120)
+        ctx.setConcreteMemoryAreaValue(0x1120, b"\x01\x00\x00\x80")
+        ctx.processing(Instruction(b"\x25\x00\x80\x99")) # ldapursw x5, [x1]
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.x5), 0xffffffff80000001)
+
+    def test_rcpc_stores_aarch64(self):
+        ctx = TritonContext(ARCH.AARCH64)
+
+        ctx.setConcreteRegisterValue(ctx.registers.x5, 0x1122334455667788)
+        ctx.setConcreteRegisterValue(ctx.registers.w6, 0xaabbccdd)
+        ctx.setConcreteRegisterValue(ctx.registers.w7, 0x11223344)
+
+        ctx.setConcreteRegisterValue(ctx.registers.x1, 0x2000)
+        ctx.setConcreteMemoryAreaValue(0x2000, b"\x00" * 8)
+        ctx.processing(Instruction(b"\x25\x00\x00\xd9")) # stlur x5, [x1]
+        self.assertEqual(ctx.getConcreteMemoryAreaValue(0x2000, 8), b"\x88\x77\x66\x55\x44\x33\x22\x11")
+
+        ctx.setConcreteRegisterValue(ctx.registers.x1, 0x2010)
+        ctx.setConcreteMemoryAreaValue(0x2010, b"\x00")
+        ctx.processing(Instruction(b"\x26\x00\x00\x19")) # stlurb w6, [x1]
+        self.assertEqual(ctx.getConcreteMemoryAreaValue(0x2010, 1), b"\xdd")
+
+        ctx.setConcreteRegisterValue(ctx.registers.x1, 0x2020)
+        ctx.setConcreteMemoryAreaValue(0x2020, b"\x00\x00")
+        ctx.processing(Instruction(b"\x27\x00\x00\x59")) # stlurh w7, [x1]
+        self.assertEqual(ctx.getConcreteMemoryAreaValue(0x2020, 2), b"\x44\x33")
+
+    def test_fpu_x86(self):
+        ctx = TritonContext()
+        ctx.setArchitecture(ARCH.X86_64)
+        code1 = [
+            (b"\x48\xB8\x11\x11\x11\x11\x11\x11\x11\x11",   "mov rax, 0x1111111111111111"),
+            (b"\x48\x89\x04\x24",                           "mov qword ptr ss:[rsp], rax"),
+            (b"\x0F\x6F\x04\x24",                           "movq mm0, qword ptr ss:[rsp]"),
+            (b"\x48\xB8\x22\x22\x22\x22\x22\x22\x22\x22",   "mov rax, 0x2222222222222222"),
+            (b"\x48\x89\x04\x24",                           "mov qword ptr ss:[rsp], rax"),
+            (b"\x0F\x6F\x0C\x24",                           "movq mm1, qword ptr ss:[rsp]"),
+            (b"\x48\xB8\x33\x33\x33\x33\x33\x33\x33\x33",   "mov rax, 0x3333333333333333"),
+            (b"\x48\x89\x04\x24",                           "mov qword ptr ss:[rsp], rax"),
+            (b"\x0F\x6F\x14\x24",                           "movq mm2, qword ptr ss:[rsp]"),
+            (b"\x48\xB8\x44\x44\x44\x44\x44\x44\x44\x44",   "mov rax, 0x4444444444444444"),
+            (b"\x48\x89\x04\x24",                           "mov qword ptr ss:[rsp], rax"),
+            (b"\x0F\x6F\x1C\x24",                           "movq mm3, qword ptr ss:[rsp]"),
+            (b"\x48\xB8\x55\x55\x55\x55\x55\x55\x55\x55",   "mov rax, 0x5555555555555555"),
+            (b"\x48\x89\x04\x24",                           "mov qword ptr ss:[rsp], rax"),
+            (b"\x0F\x6F\x24\x24",                           "movq mm4, qword ptr ss:[rsp]"),
+            (b"\x48\xB8\x66\x66\x66\x66\x66\x66\x66\x66",   "mov rax, 0x6666666666666666"),
+            (b"\x48\x89\x04\x24",                           "mov qword ptr ss:[rsp], rax"),
+            (b"\x0F\x6F\x2C\x24",                           "movq mm5, qword ptr ss:[rsp]"),
+            (b"\x48\xB8\x77\x77\x77\x77\x77\x77\x77\x77",   "mov rax, 0x7777777777777777"),
+            (b"\x48\x89\x04\x24",                           "mov qword ptr ss:[rsp], rax"),
+            (b"\x0F\x6F\x34\x24",                           "movq mm6, qword ptr ss:[rsp]"),
+            (b"\x48\xB8\x88\x88\x88\x88\x88\x88\x88\x88",   "mov rax, 0x8888888888888888"),
+            (b"\x48\x89\x04\x24",                           "mov qword ptr ss:[rsp], rax"),
+            (b"\x0F\x6F\x3C\x24",                           "movq mm7, qword ptr ss:[rsp]"),
+        ]
+
+        for op, asm in code1:
+            ctx.processing(Instruction(op))
+
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.mm0), 0x1111111111111111)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.mm1), 0x2222222222222222)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.mm2), 0x3333333333333333)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.mm3), 0x4444444444444444)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.mm4), 0x5555555555555555)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.mm5), 0x6666666666666666)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.mm6), 0x7777777777777777)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.mm7), 0x8888888888888888)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st0), 0x1111111111111111)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st1), 0x2222222222222222)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st2), 0x3333333333333333)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st3), 0x4444444444444444)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st4), 0x5555555555555555)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st5), 0x6666666666666666)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st6), 0x7777777777777777)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st7), 0x8888888888888888)
+
+        # Save and trash registers
+        ctx.processing(Instruction(b"\x0F\xAE\x04\x24")) # fxsave ss:[rsp]
+        ctx.setConcreteRegisterValue(ctx.registers.st0, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st1, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st2, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st3, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st4, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st5, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st6, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st7, 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st0), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st1), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st2), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st3), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st4), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st5), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st6), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st7), 0)
+
+        # Restor and check registers
+        ctx.processing(Instruction(b"\x0F\xAE\x0C\x24")) # fxrstor ss:[rsp]
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st0), 0x1111111111111111)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st1), 0x2222222222222222)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st2), 0x3333333333333333)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st3), 0x4444444444444444)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st4), 0x5555555555555555)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st5), 0x6666666666666666)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st6), 0x7777777777777777)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st7), 0x8888888888888888)
+
+        # Save and trash registers
+        ctx.processing(Instruction(b"\x48\x0f\xae\x04\x24")) # fxsave64 ss:[rsp]
+        ctx.setConcreteRegisterValue(ctx.registers.st0, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st1, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st2, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st3, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st4, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st5, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st6, 0)
+        ctx.setConcreteRegisterValue(ctx.registers.st7, 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st0), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st1), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st2), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st3), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st4), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st5), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st6), 0)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st7), 0)
+
+        # Restor and check registers
+        ctx.processing(Instruction(b"\x48\x0f\xae\x0c\x24")) # fxrstor64 ss:[rsp]
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st0), 0x1111111111111111)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st1), 0x2222222222222222)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st2), 0x3333333333333333)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st3), 0x4444444444444444)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st4), 0x5555555555555555)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st5), 0x6666666666666666)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st6), 0x7777777777777777)
+        self.assertEqual(ctx.getConcreteRegisterValue(ctx.registers.st7), 0x8888888888888888)

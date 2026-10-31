@@ -156,6 +156,30 @@ namespace triton {
     };
 
 
+    /*! \class SynthesizerEngine
+     *  \brief The exception class used by the synthesizer engine. */
+    class SynthesizerEngine : public triton::exceptions::Engines {
+      public:
+        //! Constructor.
+        TRITON_EXPORT SynthesizerEngine(const char* message) : triton::exceptions::Engines(message) {};
+
+        //! Constructor.
+        TRITON_EXPORT SynthesizerEngine(const std::string& message) : triton::exceptions::Engines(message) {};
+    };
+
+
+    /*! \class LiftingEngine
+     *  \brief The exception class used by the lifting engine. */
+    class LiftingEngine : public triton::exceptions::Engines {
+      public:
+        //! Constructor.
+        TRITON_EXPORT LiftingEngine(const char* message) : triton::exceptions::Engines(message) {};
+
+        //! Constructor.
+        TRITON_EXPORT LiftingEngine(const std::string& message) : triton::exceptions::Engines(message) {};
+    };
+
+
     /*! \class SolverEngine
      *  \brief The exception class used by the solver engine. */
     class SolverEngine : public triton::exceptions::Engines {
@@ -180,15 +204,15 @@ namespace triton {
     };
 
 
-    /*! \class API
-     *  \brief The exception class used by the Triton's API. */
-    class API : public triton::exceptions::Exception {
+    /*! \class Context
+     *  \brief The exception class used by the Triton's Context. */
+    class Context : public triton::exceptions::Exception {
       public:
         //! Constructor.
-        TRITON_EXPORT API(const char* message) : triton::exceptions::Exception(message) {};
+        TRITON_EXPORT Context(const char* message) : triton::exceptions::Exception(message) {};
 
         //! Constructor.
-        TRITON_EXPORT API(const std::string& message) : triton::exceptions::Exception(message) {};
+        TRITON_EXPORT Context(const std::string& message) : triton::exceptions::Exception(message) {};
     };
 
 
@@ -273,6 +297,18 @@ namespace triton {
 
         //! Constructor.
         TRITON_EXPORT Instruction(const std::string& message) : triton::exceptions::Architecture(message) {};
+    };
+
+
+    /*! \class BasicBlock
+     *  \brief The exception class used by a basic block. */
+    class BasicBlock : public triton::exceptions::Architecture {
+      public:
+        //! Constructor.
+        TRITON_EXPORT BasicBlock(const char* message) : triton::exceptions::Architecture(message) {};
+
+        //! Constructor.
+        TRITON_EXPORT BasicBlock(const std::string& message) : triton::exceptions::Architecture(message) {};
     };
 
 
@@ -372,15 +408,15 @@ namespace triton {
     };
 
 
-    /*! \class AstTranslations
-     *  \brief The exception class used by all AST translations (`z3 <-> triton`). */
-    class AstTranslations : public triton::exceptions::Ast {
+    /*! \class AstLifting
+     *  \brief The exception class used by all AST lifting (e.g `z3 <-> triton`). */
+    class AstLifting : public triton::exceptions::Ast {
       public:
         //! Constructor.
-        TRITON_EXPORT AstTranslations(const char* message) : triton::exceptions::Ast(message) {};
+        TRITON_EXPORT AstLifting(const char* message) : triton::exceptions::Ast(message) {};
 
         //! Constructor.
-        TRITON_EXPORT AstTranslations(const std::string& message) : triton::exceptions::Ast(message) {};
+        TRITON_EXPORT AstLifting(const std::string& message) : triton::exceptions::Ast(message) {};
     };
 
 

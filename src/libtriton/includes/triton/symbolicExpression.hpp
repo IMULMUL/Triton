@@ -8,8 +8,8 @@
 #ifndef TRITON_SYMBOLICEXPRESSION_H
 #define TRITON_SYMBOLICEXPRESSION_H
 
-#include <string>
 #include <memory>
+#include <string>
 
 #include <triton/ast.hpp>
 #include <triton/dllexport.hpp>
@@ -46,7 +46,6 @@ namespace triton {
       //! \class SymbolicExpression
       /*! \brief The symbolic expression class */
       class SymbolicExpression {
-
         protected:
           //! The type of the symbolic expression assignment.
           triton::engines::symbolic::expression_e type;
@@ -57,14 +56,27 @@ namespace triton {
           //! The comment of the symbolic expression.
           std::string comment;
 
+          //! The address of the instruction behind the symbolic expression. -1 if not defined.
+          triton::uint64 address;
+
+          //! The instruction disassembly where the symbolic expression comes from.
+          std::string disassembly;
+
           //! The symbolic expression id. This id is unique.
           triton::usize id;
 
-          //! The origin memory address if `kind` is equal to `triton::engines::symbolic::MEM`, invalid memory otherwise.
+          //! The origin memory address if `type` is equal to `triton::engines::symbolic::MEM`, invalid memory otherwise.
           triton::arch::MemoryAccess originMemory;
 
-          //! The origin register if `kind` is equal to `triton::engines::symbolic::REG`, `REG_INVALID` otherwise.
+          //! The origin register if `type` is equal to `triton::engines::symbolic::REG`, `REG_INVALID` otherwise.
           triton::arch::Register originRegister;
+
+        private:
+          //! Returns the syntax of a bitvector define
+          TRITON_EXPORT std::string getBitvectorDefine(void) const;
+
+          //! Returns the syntax of an array define
+          TRITON_EXPORT std::string getArrayDefine(void) const;
 
         public:
           //! True if the symbolic expression is tainted.
@@ -115,10 +127,10 @@ namespace triton {
           //! Returns the symbolic expression representation as string according the mode of the AST representation.
           TRITON_EXPORT std::string getFormattedExpression(void) const;
 
-          //! Returns the origin memory access if `kind` is equal to `triton::engines::symbolic::MEM`, invalid memory otherwise.
+          //! Returns the origin memory access if `kind` is equal to `triton::engines::symbolic::MEMORY_EXPRESSION`, invalid memory otherwise.
           TRITON_EXPORT const triton::arch::MemoryAccess& getOriginMemory(void) const;
 
-          //! Returns the origin register if `kind` is equal to `triton::engines::symbolic::REG`, `REG_INVALID` otherwise.
+          //! Returns the origin register if `kind` is equal to `triton::engines::symbolic::REGISTER_EXPRESSION`, invalid register otherwise.
           TRITON_EXPORT const triton::arch::Register& getOriginRegister(void) const;
 
           //! Sets a root node.
@@ -130,11 +142,23 @@ namespace triton {
           //! Sets the kind of the symbolic expression.
           TRITON_EXPORT void setType(triton::engines::symbolic::expression_e type);
 
+          //! Sets the symbolic expression address.
+          TRITON_EXPORT void setAddress(triton::uint64 address);
+
+          //! Get the address of the symbolic expression, if any.
+          TRITON_EXPORT triton::uint64 getAddress(void) const;
+
           //! Sets the origin memory acccess.
           TRITON_EXPORT void setOriginMemory(const triton::arch::MemoryAccess& mem);
 
           //! Sets the origin register.
           TRITON_EXPORT void setOriginRegister(const triton::arch::Register& reg);
+
+          //! Writes back the instruction disassembly where the symbolic expression comes from.
+          TRITON_EXPORT void writeBackDisassembly(const std::string& disassembly);
+
+          //! Gets the instruction disassembly where the symbolic expression comes from.
+          TRITON_EXPORT const std::string& getDisassembly(void);
       };
 
       //! Shared Symbolic Expression.

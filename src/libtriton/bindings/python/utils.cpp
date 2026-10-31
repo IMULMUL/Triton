@@ -14,6 +14,29 @@
 #include <limits>
 
 
+#if PY_VERSION_HEX >= 0x030C0000
+
+  #define tt_GET_OB_DIGIT(obj) obj->long_value.ob_digit
+  #define tt_SET_OB_DIGIT(obj, n) obj->long_value.lv_tag = (n << 3) | (obj->long_value.lv_tag & 3)
+  #define tt_PyLong_IsNegative(obj) ((obj->long_value.lv_tag & 3) == 2)
+  #define tt_PyLong_DigitCount(obj) (obj->long_value.lv_tag >> 3)
+
+#elif PY_VERSION_HEX >= 0X030A00F0
+
+  #define tt_GET_OB_DIGIT(obj) obj->ob_digit
+  #define tt_SET_OB_DIGIT(obj, n) Py_SET_SIZE(obj, n)
+  #define tt_PyLong_IsNegative(obj) (Py_SIZE(obj) < 0)
+  #define tt_PyLong_DigitCount(obj) (tt_PyLong_IsNegative(obj) ? -Py_SIZE(obj) : Py_SIZE(obj))
+
+#else
+
+  #define tt_GET_OB_DIGIT(obj) obj->ob_digit
+  #define tt_SET_OB_DIGIT(obj, n) Py_SIZE(obj) = n
+  #define tt_PyLong_IsNegative(obj) (Py_SIZE(obj) < 0)
+  #define tt_PyLong_DigitCount(obj) (tt_PyLong_IsNegative(obj) ? -Py_SIZE(obj) : Py_SIZE(obj))
+
+#endif
+
 
 namespace triton {
   namespace bindings {
@@ -38,13 +61,13 @@ namespace triton {
         }
 
         v = reinterpret_cast<PyLongObject*>(vv);
-        n = (Py_SIZE(v) < 0);
-        i = n ? -Py_SIZE(v) : Py_SIZE(v);
+        n = tt_PyLong_IsNegative(v);
+        i = tt_PyLong_DigitCount(v);
         x = 0;
 
         while (--i >= 0) {
           prev = x;
-          x = (x << PyLong_SHIFT) | v->ob_digit[i];
+          x = (x << PyLong_SHIFT) | tt_GET_OB_DIGIT(v)[i];
           if ((x >> PyLong_SHIFT) != prev)
             throw triton::exceptions::Bindings("triton::bindings::python::PyLong_AsUint(): long int too large to convert.");
         }
@@ -67,13 +90,13 @@ namespace triton {
         }
 
         v = reinterpret_cast<PyLongObject*>(vv);
-        n = (Py_SIZE(v) < 0);
-        i = n ? -Py_SIZE(v) : Py_SIZE(v);
+        n = tt_PyLong_IsNegative(v);
+        i = tt_PyLong_DigitCount(v);
         x = 0;
 
         while (--i >= 0) {
           prev = x;
-          x = (x << PyLong_SHIFT) | v->ob_digit[i];
+          x = (x << PyLong_SHIFT) | tt_GET_OB_DIGIT(v)[i];
           if ((x >> PyLong_SHIFT) != prev)
             throw triton::exceptions::Bindings("triton::bindings::python::PyLong_AsUsize(): long int too large to convert.");
         }
@@ -96,13 +119,13 @@ namespace triton {
         }
 
         v = reinterpret_cast<PyLongObject*>(vv);
-        n = (Py_SIZE(v) < 0);
-        i = n ? -Py_SIZE(v) : Py_SIZE(v);
+        n = tt_PyLong_IsNegative(v);
+        i = tt_PyLong_DigitCount(v);
         x = 0;
 
         while (--i >= 0) {
           prev = x;
-          x = (x << PyLong_SHIFT) | v->ob_digit[i];
+          x = (x << PyLong_SHIFT) | tt_GET_OB_DIGIT(v)[i];
           if ((x >> PyLong_SHIFT) != prev)
             throw triton::exceptions::Bindings("triton::bindings::python::PyLong_AsUint32(): long int too large to convert.");
         }
@@ -125,13 +148,13 @@ namespace triton {
         }
 
         v = reinterpret_cast<PyLongObject*>(vv);
-        n = (Py_SIZE(v) < 0);
-        i = n ? -Py_SIZE(v) : Py_SIZE(v);
+        n = tt_PyLong_IsNegative(v);
+        i = tt_PyLong_DigitCount(v);
         x = 0;
 
         while (--i >= 0) {
           prev = x;
-          x = (x << PyLong_SHIFT) | v->ob_digit[i];
+          x = (x << PyLong_SHIFT) | tt_GET_OB_DIGIT(v)[i];
           if ((x >> PyLong_SHIFT) != prev)
             throw triton::exceptions::Bindings("triton::bindings::python::PyLong_AsUint64(): long int too large to convert.");
         }
@@ -154,13 +177,13 @@ namespace triton {
         }
 
         v = reinterpret_cast<PyLongObject*>(vv);
-        n = (Py_SIZE(v) < 0);
-        i = n ? -Py_SIZE(v) : Py_SIZE(v);
+        n = tt_PyLong_IsNegative(v);
+        i = tt_PyLong_DigitCount(v);
         x = 0;
 
         while (--i >= 0) {
           prev = x;
-          x = (x << PyLong_SHIFT) | v->ob_digit[i];
+          x = (x << PyLong_SHIFT) | tt_GET_OB_DIGIT(v)[i];
           if ((x >> PyLong_SHIFT) != prev)
             throw triton::exceptions::Bindings("triton::bindings::python::PyLong_AsUint128(): long int too large to convert.");
         }
@@ -183,13 +206,13 @@ namespace triton {
         }
 
         v = reinterpret_cast<PyLongObject*>(vv);
-        n = (Py_SIZE(v) < 0);
-        i = n ? -Py_SIZE(v) : Py_SIZE(v);
+        n = tt_PyLong_IsNegative(v);
+        i = tt_PyLong_DigitCount(v);
         x = 0;
 
         while (--i >= 0) {
           prev = x;
-          x = (x << PyLong_SHIFT) | v->ob_digit[i];
+          x = (x << PyLong_SHIFT) | tt_GET_OB_DIGIT(v)[i];
           if ((x >> PyLong_SHIFT) != prev)
             throw triton::exceptions::Bindings("triton::bindings::python::PyLong_AsUint256(): long int too large to convert.");
         }
@@ -212,13 +235,13 @@ namespace triton {
         }
 
         v = reinterpret_cast<PyLongObject*>(vv);
-        n = (Py_SIZE(v) < 0);
-        i = n ? -Py_SIZE(v) : Py_SIZE(v);
+        n = tt_PyLong_IsNegative(v);
+        i = tt_PyLong_DigitCount(v);
         x = 0;
 
         while (--i >= 0) {
           prev = x;
-          x = (x << PyLong_SHIFT) | v->ob_digit[i];
+          x = (x << PyLong_SHIFT) | tt_GET_OB_DIGIT(v)[i];
           if ((x >> PyLong_SHIFT) != prev)
             throw triton::exceptions::Bindings("triton::bindings::python::PyLong_AsUint512(): long int too large to convert.");
         }
@@ -248,8 +271,9 @@ namespace triton {
         }
 
         v = _PyLong_New(ndigits);
-        digit* p = v->ob_digit;
-        Py_SIZE(v) = ndigits;
+        digit* p = tt_GET_OB_DIGIT(v);
+        tt_SET_OB_DIGIT(v, ndigits);
+
         while (value) {
           *p++ = static_cast<digit>(value & PyLong_MASK);
           value >>= PyLong_SHIFT;
@@ -281,8 +305,9 @@ namespace triton {
         }
 
         v = _PyLong_New(ndigits);
-        digit* p = v->ob_digit;
-        Py_SIZE(v) = ndigits;
+        digit* p = tt_GET_OB_DIGIT(v);
+        tt_SET_OB_DIGIT(v, ndigits);
+
         while (value) {
           *p++ = static_cast<digit>(value & PyLong_MASK);
           value >>= PyLong_SHIFT;
@@ -317,8 +342,9 @@ namespace triton {
         }
 
         v = _PyLong_New(ndigits);
-        digit* p = v->ob_digit;
-        Py_SIZE(v) = ndigits;
+        digit* p = tt_GET_OB_DIGIT(v);
+        tt_SET_OB_DIGIT(v, ndigits);
+
         while (value) {
           *p++ = static_cast<digit>(value & PyLong_MASK);
           value >>= PyLong_SHIFT;
@@ -336,7 +362,7 @@ namespace triton {
 
         // it is mandatory to let Python deal with small numbers (static objects)
         if (value <= std::numeric_limits<long>::max())
-          return PyInt_FromLong(value.convert_to<long>());
+          return PyInt_FromLong(static_cast<long>(value));
 
         /* Count the number of Python digits. */
         t = value;
@@ -346,10 +372,11 @@ namespace triton {
         }
 
         v = _PyLong_New(ndigits);
-        digit* p = v->ob_digit;
-        Py_SIZE(v) = ndigits;
+        digit* p = tt_GET_OB_DIGIT(v);
+        tt_SET_OB_DIGIT(v, ndigits);
+
         while (value) {
-          *p++ = (value & PyLong_MASK).convert_to<digit>();
+          *p++ = static_cast<digit>(value & PyLong_MASK);
           value >>= PyLong_SHIFT;
         }
 
@@ -365,7 +392,7 @@ namespace triton {
 
         // it is mandatory to let Python deal with small numbers (static objects)
         if (value <= std::numeric_limits<long>::max())
-          return PyInt_FromLong(value.convert_to<long>());
+          return PyInt_FromLong(static_cast<long>(value));
 
         /* Count the number of Python digits. */
         t = value;
@@ -375,10 +402,11 @@ namespace triton {
         }
 
         v = _PyLong_New(ndigits);
-        digit* p = v->ob_digit;
-        Py_SIZE(v) = ndigits;
+        digit* p = tt_GET_OB_DIGIT(v);
+        tt_SET_OB_DIGIT(v, ndigits);
+
         while (value) {
-          *p++ = (value & PyLong_MASK).convert_to<digit>();
+          *p++ = static_cast<digit>(value & PyLong_MASK);
           value >>= PyLong_SHIFT;
         }
 
@@ -394,7 +422,7 @@ namespace triton {
 
         // it is mandatory to let Python deal with small numbers (static objects)
         if (value <= std::numeric_limits<long>::max())
-          return PyInt_FromLong(value.convert_to<long>());
+          return PyInt_FromLong(static_cast<long>(value));
 
         /* Count the number of Python digits. */
         t = value;
@@ -404,10 +432,11 @@ namespace triton {
         }
 
         v = _PyLong_New(ndigits);
-        digit* p = v->ob_digit;
-        Py_SIZE(v) = ndigits;
+        digit* p = tt_GET_OB_DIGIT(v);
+        tt_SET_OB_DIGIT(v, ndigits);
+
         while (value) {
-          *p++ = (value & PyLong_MASK).convert_to<digit>();
+          *p++ = static_cast<digit>(value & PyLong_MASK);
           value >>= PyLong_SHIFT;
         }
 
@@ -417,3 +446,8 @@ namespace triton {
     }; /* python namespace */
   }; /* bindings namespace */
 }; /* triton namespace */
+
+#undef tt_GET_OB_DIGIT
+#undef tt_SET_OB_DIGIT
+#undef tt_PyLong_IsNegative
+#undef tt_PyLong_DigitCount

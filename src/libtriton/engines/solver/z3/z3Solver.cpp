@@ -5,16 +5,17 @@
 **  This program is under the terms of the Apache License 2.0.
 */
 
+#include <chrono>
 #include <string>
 
 #include <triton/astContext.hpp>
 #include <triton/exceptions.hpp>
 #include <triton/solverModel.hpp>
 #include <triton/symbolicVariable.hpp>
-#include <triton/tritonToZ3Ast.hpp>
+#include <triton/tritonToZ3.hpp>
 #include <triton/tritonTypes.hpp>
 #include <triton/z3Solver.hpp>
-#include <triton/z3ToTritonAst.hpp>
+#include <triton/z3ToTriton.hpp>
 
 
 
@@ -22,8 +23,7 @@ namespace triton {
   namespace engines {
     namespace solver {
 
-      //! Wrapper to handle variadict number of arguments or'd togethers
-      z3::expr mk_or(z3::expr_vector args) {
+      z3::expr Z3Solver::mk_or(z3::expr_vector args) {
         std::vector<Z3_ast> array;
 
         for (triton::uint32 i = 0; i < args.size(); i++)
@@ -39,10 +39,10 @@ namespace triton {
       }
 
 
-      std::vector<std::unordered_map<triton::usize, SolverModel>> Z3Solver::getModels(const triton::ast::SharedAbstractNode& node, triton::uint32 limit, triton::engines::solver::status_e* status, triton::uint32 timeout) const {
+      std::vector<std::unordered_map<triton::usize, SolverModel>> Z3Solver::getModels(const triton::ast::SharedAbstractNode& node, triton::uint32 limit, triton::engines::solver::status_e* status, triton::uint32 timeout, triton::uint32* solvingTime) const {
         std::vector<std::unordered_map<triton::usize, SolverModel>> ret;
         triton::ast::SharedAbstractNode onode = node;
-        triton::ast::TritonToZ3Ast z3Ast{false};
+        triton::ast::TritonToZ3 z3Ast{false};
 
         try {
           if (onode == nullptr)
@@ -79,6 +79,9 @@ namespace triton {
 
           solver.set(p);
 
+          /* Get time of solving start */
+          auto start = std::chrono::system_clock::now();
+
           /* Get first model */
           z3::check_result res = solver.check();
 
@@ -86,8 +89,7 @@ namespace triton {
           this->writeBackStatus(solver, res, status);
 
           /* Check if it is sat */
-          for (; res == z3::sat && limit >= 1; res = solver.check()) {
-
+          while (res == z3::sat && limit >= 1) {
             /* Get model */
             z3::model m = solver.get_model();
 
@@ -112,7 +114,7 @@ namespace triton {
               std::string svalue = Z3_get_numeral_string(ctx, exp);
 
               /* Convert a string value to a integer value */
-              triton::uint512 value = triton::uint512(svalue);
+              triton::uint512 value = triton::uint512(svalue.c_str());
 
               /* Create a triton model */
               SolverModel trionModel = SolverModel(z3Ast.variables[varName], value);
@@ -123,21 +125,39 @@ namespace triton {
               /* Uniq result */
               if (exp.get_sort().is_bv())
                 args.push_back(ctx.bv_const(varName.c_str(), bvSize) != ctx.bv_val(svalue.c_str(), bvSize));
-
             }
 
-            /* Escape last models */
-            solver.add(triton::engines::solver::mk_or(args));
+            /* Check that model is available */
+            if (smodel.empty())
+              break;
 
-            /* If there is model available */
-            if (smodel.size() > 0)
-              ret.push_back(smodel);
+            /* Push model */
+            ret.push_back(smodel);
 
-            /* Decrement the limit */
-            limit--;
+            if (--limit) {
+              /* Escape last models */
+              if (!args.empty()) {
+                solver.add(this->mk_or(args));
+              }
+
+              /* Get next model */
+              res = solver.check();
+            }
           }
+
+          /* Get time of solving end */
+          auto end = std::chrono::system_clock::now();
+
+          if (solvingTime)
+            *solvingTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         }
         catch (const z3::exception& e) {
+          if (!strcmp(e.msg(), "max. memory exceeded")) {
+            if (status) {
+              *status = triton::engines::solver::OUTOFMEM;
+            }
+            return {};
+          }
           throw triton::exceptions::SolverEngine(std::string("Z3Solver::getModels(): ") + e.msg());
         }
 
@@ -145,8 +165,8 @@ namespace triton {
       }
 
 
-      bool Z3Solver::isSat(const triton::ast::SharedAbstractNode& node, triton::engines::solver::status_e* status, triton::uint32 timeout) const {
-        triton::ast::TritonToZ3Ast z3Ast{false};
+      bool Z3Solver::isSat(const triton::ast::SharedAbstractNode& node, triton::engines::solver::status_e* status, triton::uint32 timeout, triton::uint32* solvingTime) const {
+        triton::ast::TritonToZ3 z3Ast{false};
 
         if (node == nullptr)
           throw triton::exceptions::SolverEngine("Z3Solver::isSat(): node cannot be null.");
@@ -179,21 +199,37 @@ namespace triton {
 
           solver.set(p);
 
+          /* Get time of solving start */
+          auto start = std::chrono::system_clock::now();
+
           z3::check_result res = solver.check();
+
+          /* Get time of solving end */
+          auto end = std::chrono::system_clock::now();
+
+          if (solvingTime)
+            *solvingTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
           this->writeBackStatus(solver, res, status);
           return res == z3::sat;
         }
         catch (const z3::exception& e) {
+          if (!strcmp(e.msg(), "max. memory exceeded")) {
+            if (status) {
+              *status = triton::engines::solver::OUTOFMEM;
+            }
+            return {};
+          }
           throw triton::exceptions::SolverEngine(std::string("Z3Solver::isSat(): ") + e.msg());
         }
       }
 
 
-      std::unordered_map<triton::usize, SolverModel> Z3Solver::getModel(const triton::ast::SharedAbstractNode& node, triton::engines::solver::status_e* status, triton::uint32 timeout) const {
+      std::unordered_map<triton::usize, SolverModel> Z3Solver::getModel(const triton::ast::SharedAbstractNode& node, triton::engines::solver::status_e* status, triton::uint32 timeout, triton::uint32 *solvingTime) const {
         std::unordered_map<triton::usize, SolverModel> ret;
         std::vector<std::unordered_map<triton::usize, SolverModel>> allModels;
 
-        allModels = this->getModels(node, 1, status, timeout);
+        allModels = this->getModels(node, 1, status, timeout, solvingTime);
         if (allModels.size() > 0)
           ret = allModels.front();
 
@@ -203,11 +239,11 @@ namespace triton {
 
       triton::ast::SharedAbstractNode Z3Solver::simplify(const triton::ast::SharedAbstractNode& node) const {
         if (node == nullptr)
-          throw triton::exceptions::AstTranslations("Z3Solver::simplify(): node cannot be null.");
+          throw triton::exceptions::AstLifting("Z3Solver::simplify(): node cannot be null.");
 
         try {
-          triton::ast::TritonToZ3Ast z3Ast{false};
-          triton::ast::Z3ToTritonAst tritonAst{node->getContext()};
+          triton::ast::TritonToZ3 z3Ast{false};
+          triton::ast::Z3ToTriton tritonAst{node->getContext()};
 
           /* From Triton to Z3 */
           z3::expr expr = z3Ast.convert(node);
@@ -218,17 +254,17 @@ namespace triton {
           return snode;
         }
         catch (const z3::exception& e) {
-          throw triton::exceptions::AstTranslations(std::string("Z3Solver::evaluate(): ") + e.msg());
+          throw triton::exceptions::AstLifting(std::string("Z3Solver::evaluate(): ") + e.msg());
         }
       }
 
 
       triton::uint512 Z3Solver::evaluate(const triton::ast::SharedAbstractNode& node) const {
         if (node == nullptr)
-          throw triton::exceptions::AstTranslations("Z3Solver::simplify(): node cannot be null.");
+          throw triton::exceptions::AstLifting("Z3Solver::simplify(): node cannot be null.");
 
         try {
-          triton::ast::TritonToZ3Ast z3ast{true};
+          triton::ast::TritonToZ3 z3ast{true};
 
           /* From Triton to Z3 */
           z3::expr expr = z3ast.convert(node);
@@ -245,7 +281,7 @@ namespace triton {
           return res;
         }
         catch (const z3::exception& e) {
-          throw triton::exceptions::AstTranslations(std::string("Z3Solver::evaluate(): ") + e.msg());
+          throw triton::exceptions::AstLifting(std::string("Z3Solver::evaluate(): ") + e.msg());
         }
       }
 
@@ -265,8 +301,7 @@ namespace triton {
               if (solver.reason_unknown() == "timeout") {
                 *status = triton::engines::solver::TIMEOUT;
               }
-              else if (solver.reason_unknown() == "max. memory exceeded")
-              {
+              else if (solver.reason_unknown() == "max. memory exceeded") {
                 *status = triton::engines::solver::OUTOFMEM;
               }
               else {

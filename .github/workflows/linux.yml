@@ -7,51 +7,39 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
+        boost-interface: ['ON', 'OFF']
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: Checkout Triton repository
+        uses: actions/checkout@v6
+
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Upgrade pip version
-        run: |
-          python -m pip install -U pip
-      - name: Install dependencies
-        run: |
-          sudo apt-get install python-setuptools libboost-dev
-      - name: Install Z3
-        run: |
-          sudo apt-get install libz3-dev
-          python -m pip install z3-solver
-      - name: Install Capstone
-        run: |
-          wget https://github.com/aquynh/capstone/archive/4.0.2.tar.gz
-          tar -xf ./4.0.2.tar.gz
-          cd ./capstone-4.0.2
-          bash ./make.sh
-          sudo make install
-          cd ../
-      - name: Install Unicorn
-        run: |
-          git clone https://github.com/unicorn-engine/unicorn
-          cd ./unicorn
-          git checkout ec4c6365c3c91703b3725540100023f6a03db742 # 1.0.2-rc2
-          UNICORN_ARCHS="x86 arm aarch64" ./make.sh # we use unicorn to only test some semantics
-          sudo make install
-          cd bindings/python
-          python ./setup.py install --user
-          cd ../../../
-      - name: Install LIEF
-        run: |
-          python -m pip install lief
+
+      - name: Install Triton dependencies
+        uses: ./.github/actions/install-triton-deps/linux
+        with:
+          python-version: ${{ matrix.python-version }}
+
       - name: Compile Triton
         run: |
-          mkdir ./build
-          cd ./build
-          cmake ..
-          sudo make -j3 install
-      - name: Unittests
+          cmake -B build \
+                -DZ3_INTERFACE=ON \
+                -DZ3_INCLUDE_DIRS=${{ env.Z3_INCLUDE_DIRS }} \
+                -DZ3_LIBRARIES=${{ env.Z3_LIBRARIES }} \
+                -DBITWUZLA_INTERFACE=ON \
+                -DBITWUZLA_INCLUDE_DIRS=${{ env.BITWUZLA_INCLUDE_DIRS }} \
+                -DBITWUZLA_LIBRARIES=${{ env.BITWUZLA_LIBRARIES }} \
+                -DLLVM_INTERFACE=ON \
+                -DCMAKE_PREFIX_PATH=${{ env.LLVM_PATH }} \
+                -DBOOST_INTERFACE=${{ matrix.boost-interface }} \
+                -DCAPSTONE_INCLUDE_DIRS=${{ env.CAPSTONE_INCLUDE_DIRS }} \
+                -DCAPSTONE_LIBRARIES=${{ env.CAPSTONE_LIBRARIES }}
+          cmake --build build --config Release --parallel 2
+          cmake --install build --config Release --prefix install
+
+      - name: Run tests
         run: |
-          make -C build check
+          ctest --test-dir build --output-on-failure -C Release

@@ -28,6 +28,7 @@ namespace triton {
           originRegister() {
         this->ast           = node;
         this->comment       = comment;
+        this->address       = -1;
         this->id            = id;
         this->isTainted     = false;
         this->type          = type;
@@ -42,6 +43,7 @@ namespace triton {
         this->originMemory   = other.originMemory;
         this->originRegister = other.originRegister;
         this->type           = other.type;
+        this->address        = other.address;
       }
 
 
@@ -53,6 +55,7 @@ namespace triton {
         this->originMemory   = other.originMemory;
         this->originRegister = other.originRegister;
         this->type           = other.type;
+        this->address        = other.address;
         return *this;
       }
 
@@ -91,6 +94,22 @@ namespace triton {
         else if (ast->getContext()->getRepresentationMode() == triton::ast::representations::PYTHON_REPRESENTATION)
           return "ref_" + std::to_string(this->id);
 
+        else if (ast->getContext()->getRepresentationMode() == triton::ast::representations::PCODE_REPRESENTATION) {
+          if (this->isMemory()) {
+            auto mem = this->getOriginMemory();
+            std::ostringstream ss;
+            ss << "@[0x" << std::hex << mem.getAddress() << ":" << std::dec << mem.getBitSize() << "]";
+            return ss.str();
+          }
+          else if (this->isRegister()) {
+            auto reg = this->getOriginRegister();
+            return reg.getName() + "_" + std::to_string(this->id);
+          }
+          else {
+            return "tmp_" + std::to_string(this->id);
+          }
+        }
+
         else
           throw triton::exceptions::SymbolicExpression("SymbolicExpression::getFormattedId(): Invalid AST representation mode.");
       }
@@ -103,14 +122,38 @@ namespace triton {
         if (this->getComment().empty())
           return "";
 
-        else if (ast->getContext()->getRepresentationMode() == triton::ast::representations::SMT_REPRESENTATION)
-          return "; " + this->getComment();
+        switch (ast->getContext()->getRepresentationMode()) {
+          case triton::ast::representations::SMT_REPRESENTATION:
+          case triton::ast::representations::PCODE_REPRESENTATION:
+            return "; " + this->getComment();
 
-        else if (ast->getContext()->getRepresentationMode() == triton::ast::representations::PYTHON_REPRESENTATION)
-          return "# " + this->getComment();
+          case triton::ast::representations::PYTHON_REPRESENTATION:
+            return "# " + this->getComment();
 
-        else
-          throw triton::exceptions::SymbolicExpression("SymbolicExpression::getFormattedComment(): Invalid AST representation mode.");
+          default:
+            throw triton::exceptions::SymbolicExpression("SymbolicExpression::getFormattedComment(): Invalid AST representation mode.");
+        };
+      }
+
+
+      std::string SymbolicExpression::getBitvectorDefine(void) const {
+        std::ostringstream stream;
+        stream << "(define-fun " << this->getFormattedId() << " () (_ BitVec " << std::dec << this->getAst()->getBitvectorSize() << ") " << this->getAst() << ")";
+        return stream.str();
+      }
+
+
+      std::string SymbolicExpression::getArrayDefine(void) const {
+        std::ostringstream stream;
+
+        if (this->getAst()->getType() == triton::ast::ARRAY_NODE) {
+          stream << "(declare-fun " << this->getFormattedId() << " () (Array (_ BitVec " << std::dec << triton::ast::getIndexSize(this->getAst()) << ") (_ BitVec 8)))";
+        }
+        else {
+          stream << "(define-fun " << this->getFormattedId() << " () (Array (_ BitVec " << std::dec << triton::ast::getIndexSize(this->getAst()) << ") (_ BitVec 8)) " << this->getAst() << ")";
+        }
+
+        return stream.str();
       }
 
 
@@ -120,22 +163,24 @@ namespace triton {
         if (this->ast == nullptr)
           throw triton::exceptions::SymbolicExpression("SymbolicExpression::getFormattedExpression(): No AST defined.");
 
-        else if (ast->getContext()->getRepresentationMode() == triton::ast::representations::SMT_REPRESENTATION) {
-          stream << "(define-fun " << this->getFormattedId() << " () (_ BitVec " << std::dec << this->getAst()->getBitvectorSize() << ") " << this->getAst() << ")";
-          if (!this->getComment().empty())
-            stream << " " << this->getFormattedComment();
-          return stream.str();
+        switch (ast->getContext()->getRepresentationMode()) {
+          case triton::ast::representations::SMT_REPRESENTATION:
+            stream << (this->getAst()->isArray() ? this->getArrayDefine() : this->getBitvectorDefine());
+            break;
+          case triton::ast::representations::PCODE_REPRESENTATION:
+          case triton::ast::representations::PYTHON_REPRESENTATION:
+            stream << this->getFormattedId() << " = " << this->getAst();
+            break;
+
+          default:
+            throw triton::exceptions::SymbolicExpression("SymbolicExpression::getFormattedExpression(): Invalid AST representation mode.");
         }
 
-        else if (ast->getContext()->getRepresentationMode() == triton::ast::representations::PYTHON_REPRESENTATION) {
-          stream << this->getFormattedId() << " = " << this->getAst();
-          if (!this->getComment().empty())
-            stream << " " << this->getFormattedComment();
-          return stream.str();
+        if (!this->getComment().empty()) {
+          stream << " " << this->getFormattedComment();
         }
 
-        else
-          throw triton::exceptions::SymbolicExpression("SymbolicExpression::getFormattedExpression(): Invalid AST representation mode.");
+        return stream.str();
       }
 
 
@@ -183,6 +228,16 @@ namespace triton {
       }
 
 
+      void SymbolicExpression::setAddress(triton::uint64 address) {
+        this->address = address;
+      }
+
+
+      triton::uint64 SymbolicExpression::getAddress(void) const {
+        return this->address;
+      }
+
+
       void SymbolicExpression::setType(triton::engines::symbolic::expression_e type) {
         this->type = type;
       }
@@ -212,6 +267,16 @@ namespace triton {
         if (this->ast == nullptr)
           return false;
         return this->ast->isSymbolized();
+      }
+
+
+      void SymbolicExpression::writeBackDisassembly(const std::string& disassembly) {
+        this->disassembly = disassembly;
+      }
+
+
+      const std::string& SymbolicExpression::getDisassembly(void) {
+        return this->disassembly;
       }
 
 

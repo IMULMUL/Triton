@@ -43,10 +43,13 @@ namespace triton {
    */
 
     /*! \class Instruction
-     *  \brief This class is used when to represent an instruction
+     *  \brief This class is used to represent an instruction
      */
     class Instruction {
       protected:
+        //! The instruction's architecture.
+        triton::arch::architecture_e arch;
+
         //! The thread id of the instruction.
         triton::uint32 tid;
 
@@ -57,7 +60,7 @@ namespace triton {
         std::stringstream disassembly;
 
         //! The opcode of the instruction.
-        triton::uint8 opcode[32];
+        triton::uint8 opcode[16];
 
         //! The size of the instruction.
         triton::uint32 size;
@@ -125,10 +128,10 @@ namespace triton {
         TRITON_EXPORT Instruction();
 
         //! Constructor with opcode.
-        TRITON_EXPORT Instruction(const triton::uint8* opcode, triton::uint32 opSize);
+        TRITON_EXPORT Instruction(const void* opcode, triton::uint32 opSize);
 
         //! Constructor with opcode and address
-        TRITON_EXPORT Instruction(triton::uint64 addr, const triton::uint8* opcode, triton::uint32 opSize);
+        TRITON_EXPORT Instruction(triton::uint64 addr, const void* opcode, triton::uint32 opSize);
 
         //! Constructor by copy.
         TRITON_EXPORT Instruction(const Instruction& other);
@@ -138,6 +141,9 @@ namespace triton {
 
         //! Destructor.
         TRITON_EXPORT ~Instruction();
+
+        //! Returns the instruction's architecture.
+        TRITON_EXPORT triton::arch::architecture_e getArchitecture(void) const;
 
         //! Returns the thread id of the instruction.
         TRITON_EXPORT triton::uint32 getThreadId(void) const;
@@ -188,7 +194,7 @@ namespace triton {
         TRITON_EXPORT std::set<triton::arch::Register>& getUndefinedRegisters(void);
 
         //! Sets the opcode of the instruction.
-        TRITON_EXPORT void setOpcode(const triton::uint8* opcode, triton::uint32 size);
+        TRITON_EXPORT void setOpcode(const void* opcode, triton::uint32 size);
 
         //! Returns the size of the instruction.
         TRITON_EXPORT triton::uint32 getSize(void) const;
@@ -232,6 +238,9 @@ namespace triton {
         //! Sets the size of the instruction.
         TRITON_EXPORT void setSize(triton::uint32 size);
 
+        //! Sets the instruction's architecture.
+        TRITON_EXPORT void setArchitecture(triton::arch::architecture_e arch);
+
         //! Sets the type of the instruction.
         TRITON_EXPORT void setType(triton::uint32 type);
 
@@ -260,7 +269,7 @@ namespace triton {
         TRITON_EXPORT void setThumb(bool state);
 
         //! Adds a symbolic expression
-        TRITON_EXPORT const triton::engines::symbolic::SharedSymbolicExpression& addSymbolicExpression(const triton::engines::symbolic::SharedSymbolicExpression& expr);
+        TRITON_EXPORT void addSymbolicExpression(const triton::engines::symbolic::SharedSymbolicExpression& expr);
 
         //! Returns true if this instruction is a branch
         TRITON_EXPORT bool isBranch(void) const;
